@@ -107,9 +107,9 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new Gates(this.Context, this.GameConfiguration).Initialize();
         new Quest(this.Context, this.GameConfiguration).Initialize();
         new Quests(this.Context, this.GameConfiguration).Initialize();
-        new DevilSquareInitializer(this.Context, this.GameConfiguration).Initialize();
+        new Version095d.Events.DevilSquareInitializer(this.Context, this.GameConfiguration).Initialize();
         new BloodCastleInitializer(this.Context, this.GameConfiguration).Initialize();
-        new ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
+        new Events.ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         new CastleSiegeInitializer(this.Context, this.GameConfiguration).Initialize();
     }
 

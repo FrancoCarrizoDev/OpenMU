@@ -52,7 +52,7 @@ public class DataInitialization : DataInitializationBase
     protected override IInitializer GameConfigurationInitializer => new GameConfigurationInitializer(this.Context, this.GameConfiguration);
 
     /// <inheritdoc/>
-    protected override IGameMapsInitializer GameMapsInitializer => new VersionSeasonSix.GameMapsInitializer(this.Context, this.GameConfiguration);
+    protected override IGameMapsInitializer GameMapsInitializer => new GameMapsInitializer(this.Context, this.GameConfiguration);
 
     /// <inheritdoc />
     protected override void CreateGameClientDefinition()

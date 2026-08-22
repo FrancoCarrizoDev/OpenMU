@@ -45,11 +45,19 @@ internal static class QuestDefinitionExtensions
     /// <returns>This quest definition.</returns>
     public static QuestDefinition WithMonsterKillRequirement(this QuestDefinition questDefinition, int amount, short monsterNumber, IContext context, GameConfiguration gameConfiguration)
     {
+        if (gameConfiguration.Monsters.FirstOrDefault(m => m.Number == monsterNumber) is not { } monster)
+        {
+            // The monster isn't part of this GameConfiguration - e.g. it only spawns on a map
+            // excluded from a pruned roster (see docs/backlog.md). Skip the requirement instead of
+            // crashing; a config with the full map roster never hits this branch.
+            return questDefinition;
+        }
+
         var killRequirement = context.CreateNew<QuestMonsterKillRequirement>();
         var parentNumber = (ushort)((ushort)questDefinition.Number | (questDefinition.Group << 10));
         killRequirement.SetGuid(parentNumber.ToSigned(), monsterNumber, questDefinition.QualifiedCharacterDiscriminator());
         killRequirement.MinimumNumber = amount;
-        killRequirement.Monster = gameConfiguration.Monsters.First(m => m.Number == monsterNumber);
+        killRequirement.Monster = monster;
         questDefinition.RequiredMonsterKills.Add(killRequirement);
         return questDefinition;
     }

@@ -197,7 +197,7 @@ internal class Quests : InitializerBase
     }
 
     // See also http://muonlinefanz.com/guide/quests/darkstone/
-    private void SecretOfTheDarkStone()
+    protected void SecretOfTheDarkStone()
     {
         var marlon = this.GameConfiguration.Monsters.First(m => m.Number == 229);
         var secretDarkStone = this.Context.CreateNew<QuestDefinition>();
@@ -223,7 +223,7 @@ internal class Quests : InitializerBase
     }
 
     // See also http://muonlinefanz.com/guide/quests/hero-status/
-    private void GainHeroStatus(CharacterClassNumber characterClass)
+    protected void GainHeroStatus(CharacterClassNumber characterClass)
     {
         var marlon = this.GameConfiguration.Monsters.First(m => m.Number == 229);
         var heroStatus = this.Context.CreateNew<QuestDefinition>();
@@ -264,7 +264,7 @@ internal class Quests : InitializerBase
     }
 
     // See also http://muonlinefanz.com/guide/quests/treasure/
-    private void TreasuresOfMu(CharacterClassNumber characterClass, byte itemNumber)
+    protected void TreasuresOfMu(CharacterClassNumber characterClass, byte itemNumber)
     {
         var sebinaThePriestess = this.GameConfiguration.Monsters.First(m => m.Number == 235);
         var treasuresOfMu = this.Context.CreateNew<QuestDefinition>();
@@ -290,7 +290,7 @@ internal class Quests : InitializerBase
     }
 
     // See also http://muonlinefanz.com/guide/quests/scroll/
-    private void FindScrollOfEmperor(CharacterClassNumber characterClass)
+    protected void FindScrollOfEmperor(CharacterClassNumber characterClass)
     {
         var sebinaThePriestess = this.GameConfiguration.Monsters.First(m => m.Number == 235);
         var findScrollOfEmperor = this.Context.CreateNew<QuestDefinition>();
@@ -349,7 +349,7 @@ internal class Quests : InitializerBase
         return itemRequirement;
     }
 
-    private void CreateNewQuests()
+    protected void CreateNewQuests()
     {
         this.CreateQuest("Spider Hunt!", 18, 0, 1, 2, 1, 14, 257)
             .WithMonsterKillRequirement(10, 3, this.Context, this.GameConfiguration)
