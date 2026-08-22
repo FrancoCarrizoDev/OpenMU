@@ -347,5 +347,23 @@ namespace MUnique.OpenMU.Persistence.Initialization.Properties {
                 return ResourceManager.GetString("DataInitialization095d_Name", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Provides initial data for a classic Season 1 style server (2nd class change, Magic Gladiator, Dark Lord, Castle Siege; no Master classes, Harmony, sockets or Summoner)..
+        /// </summary>
+        public static string DataInitializationSeasonOne_Description {
+            get {
+                return ResourceManager.GetString("DataInitializationSeasonOne_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Season 1 Classic Initialization.
+        /// </summary>
+        public static string DataInitializationSeasonOne_Name {
+            get {
+                return ResourceManager.GetString("DataInitializationSeasonOne_Name", resourceCulture);
+            }
+        }
     }
 }

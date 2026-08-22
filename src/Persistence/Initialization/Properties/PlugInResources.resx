@@ -116,6 +116,12 @@
   <data name="DataInitialization_Description" xml:space="preserve">
     <value>Provides initial data for Season 6 Episode 3.</value>
   </data>
+  <data name="DataInitializationSeasonOne_Name" xml:space="preserve">
+    <value>Season 1 Classic Initialization</value>
+  </data>
+  <data name="DataInitializationSeasonOne_Description" xml:space="preserve">
+    <value>Provides initial data for a classic Season 1 style server (2nd class change, Magic Gladiator, Dark Lord, Castle Siege; no Master classes, Harmony, sockets or Summoner).</value>
+  </data>
   <data name="AddArrowsForFairyElf_Name" xml:space="preserve">
     <value>AddArrowsForFairyElf</value>
   </data>

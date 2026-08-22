@@ -17,6 +17,24 @@ using MUnique.OpenMU.GameLogic;
 internal static class QuestDefinitionExtensions
 {
     /// <summary>
+    /// Gets the raw character class number that this quest was created for, even if
+    /// <see cref="QuestDefinition.QualifiedCharacter"/> is <see langword="null"/> because that
+    /// class doesn't exist in a pruned <see cref="GameConfiguration"/> (see docs/backlog.md).
+    /// <see cref="Quests.CreateQuest"/> always builds the quest's own <see cref="IIdentifiable.Id"/>
+    /// from <c>(byte?)qualifiedCharacter ?? 0</c> (the requested class, not the resolved entity),
+    /// so it's still readable from byte 8 of that id even when resolution to an actual
+    /// <see cref="CharacterClass"/> failed. Using this instead of
+    /// <c>QualifiedCharacter?.Number ?? &lt;some constant&gt;</c> avoids child requirements of two
+    /// different missing classes (e.g. Summoner and RageFighter) colliding with each other.
+    /// </summary>
+    /// <param name="questDefinition">The quest definition.</param>
+    /// <returns>The raw character class number this quest was created for, or 0 if it wasn't class-specific.</returns>
+    public static byte QualifiedCharacterDiscriminator(this QuestDefinition questDefinition)
+    {
+        return questDefinition.GetId().ToByteArray()[8];
+    }
+
+    /// <summary>
     /// Adds a <see cref="QuestMonsterKillRequirement"/> to this quest definition.
     /// </summary>
     /// <param name="questDefinition">The quest definition.</param>
@@ -29,7 +47,7 @@ internal static class QuestDefinitionExtensions
     {
         var killRequirement = context.CreateNew<QuestMonsterKillRequirement>();
         var parentNumber = (ushort)((ushort)questDefinition.Number | (questDefinition.Group << 10));
-        killRequirement.SetGuid(parentNumber.ToSigned(), monsterNumber, questDefinition.QualifiedCharacter?.Number ?? 0);
+        killRequirement.SetGuid(parentNumber.ToSigned(), monsterNumber, questDefinition.QualifiedCharacterDiscriminator());
         killRequirement.MinimumNumber = amount;
         killRequirement.Monster = gameConfiguration.Monsters.First(m => m.Number == monsterNumber);
         questDefinition.RequiredMonsterKills.Add(killRequirement);

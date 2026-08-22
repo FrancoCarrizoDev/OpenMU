@@ -94,12 +94,20 @@ public static class CharacterClassHelper
     /// <returns>
     /// The corresponding <see cref="CharacterClass" />es of the provided class ranks.
     /// </returns>
-    public static IEnumerable<CharacterClass> DetermineCharacterClasses(this GameConfiguration gameConfiguration, CharacterClasses classes, bool ignoreMissing = false)
+    public static IEnumerable<CharacterClass> DetermineCharacterClasses(this GameConfiguration gameConfiguration, CharacterClasses classes, bool ignoreMissing = true)
     {
         var characterClasses = gameConfiguration.CharacterClasses;
         foreach (var characterClassNumber in NumberMapping.Where(c => classes.HasFlag(c.Classes)).Select(c => c.Number))
         {
-            yield return characterClasses.First(c => c.Number == (int)characterClassNumber);
+            var match = characterClasses.FirstOrDefault(c => c.Number == (int)characterClassNumber);
+            if (match is not null)
+            {
+                yield return match;
+            }
+            else if (!ignoreMissing)
+            {
+                throw new InvalidOperationException($"Character class {characterClassNumber} is referenced but doesn't exist in this GameConfiguration.");
+            }
         }
     }
 
