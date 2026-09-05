@@ -44,6 +44,8 @@ internal sealed class ClassicSpotsInitializer : InitializerBase
         // Lost Tower: compact spots for the next progression range.
         (4, 40, 5, 13, 95, 103, 7),
         (4, 36, 190, 198, 120, 128, 7),
+        (4, 39, 232, 240, 120, 128, 7),
+        (4, 41, 120, 128, 230, 238, 7),
     };
 
     /// <summary>
