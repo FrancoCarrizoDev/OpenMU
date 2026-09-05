@@ -57,21 +57,25 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
             if (isSafezone)
             {
                 state.RecentWalks.Clear();
-                state.LastWalkStartTime = DateTime.MinValue;
+                state.LastWalkStartTimeMs = long.MinValue;
             }
             else
             {
-                var now = DateTime.UtcNow;
-                if (state.LastWalkStartTime > DateTime.MinValue)
+                // Environment.TickCount64 is monotonic, unlike DateTime.UtcNow: a wall-clock
+                // adjustment (e.g. NTP correction inside a VM/container) can make DateTime.UtcNow
+                // run backwards between two calls, which previously produced a negative elapsed
+                // time here and banned players who were just walking normally.
+                var now = Environment.TickCount64;
+                if (state.LastWalkStartTimeMs != long.MinValue)
                 {
-                    if (now - state.LastWalkStartTime > TimeSpan.FromSeconds(2))
+                    if (now - state.LastWalkStartTimeMs > 2_000)
                     {
                         state.RecentWalks.Clear();
                     }
                 }
 
-                state.RecentWalks.Enqueue(new WalkHistoryEntry { Time = now, StartPoint = startPoint });
-                state.LastWalkStartTime = now;
+                state.RecentWalks.Enqueue(new WalkHistoryEntry { TimeMs = now, StartPoint = startPoint });
+                state.LastWalkStartTimeMs = now;
 
                 while (state.RecentWalks.Count > 5)
                 {
@@ -81,7 +85,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
                 if (state.RecentWalks.Count >= 3)
                 {
                     var first = state.RecentWalks.Peek();
-                    var elapsed = now - first.Time;
+                    double elapsedMs = now - first.TimeMs;
 
                     // Compute cumulative Chebyshev path length between consecutive start positions.
                     var cumulativeTiles = 0;
@@ -107,22 +111,22 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
                         const double MinStepDelayMs = 50.0;
                         double stepDelayMarginMs = BaseStepDelayMarginMs * scalingFactor;
                         double checkStepDelayMs = Math.Max(Math.Min(MinStepDelayMs, stepDelayMs), stepDelayMs - stepDelayMarginMs);
-                        var expectedTime = TimeSpan.FromMilliseconds(cumulativeTiles * checkStepDelayMs);
-                        var deficit = expectedTime - elapsed;
-                        var tolerance = TimeSpan.FromMilliseconds(config.WalkSpeedToleranceMs * scalingFactor);
+                        double expectedMs = cumulativeTiles * checkStepDelayMs;
+                        double deficitMs = expectedMs - elapsedMs;
+                        double toleranceMs = config.WalkSpeedToleranceMs * scalingFactor;
 
-                        if (deficit > tolerance)
+                        if (deficitMs > toleranceMs)
                         {
                             player.Logger.LogWarning(
                                 "Speedhack detected on walk for player {0}: traveled {1} tiles in {2}ms (expected at least {3}ms). Deficit: {4}ms.",
                                 player.Name,
                                 cumulativeTiles,
-                                elapsed.TotalMilliseconds,
-                                expectedTime.TotalMilliseconds,
-                                deficit.TotalMilliseconds);
+                                elapsedMs,
+                                expectedMs,
+                                deficitMs);
                             shouldRecordViolation = true;
                             state.RecentWalks.Clear(); // Clear to avoid double triggers
-                            state.LastWalkStartTime = DateTime.MinValue; // Reset tracker
+                            state.LastWalkStartTimeMs = long.MinValue; // Reset tracker
                         }
                     }
                 }
@@ -151,7 +155,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
         }
 
         var attackSpeed = attributes[Stats.AttackSpeed];
-        var now = DateTime.UtcNow;
+        var now = Environment.TickCount64;
 
         var minIntervalMs = Math.Max(config.AttackSpeedMinIntervalMs, config.AttackSpeedBaseDelayMs - (attackSpeed * config.AttackSpeedScalingFactor));
         var state = this.GetState(player);
@@ -159,15 +163,15 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
 
         lock (state.Lock)
         {
-            if (state.LastAttackTokenUpdateTime == DateTime.MinValue)
+            if (state.LastAttackTokenUpdateTimeMs == long.MinValue)
             {
-                state.LastAttackTokenUpdateTime = now;
+                state.LastAttackTokenUpdateTimeMs = now;
                 state.AttackTokens = config.MaxAttackTokens - 1.0;
                 return;
             }
 
-            var elapsedMs = (now - state.LastAttackTokenUpdateTime).TotalMilliseconds;
-            state.LastAttackTokenUpdateTime = now;
+            double elapsedMs = now - state.LastAttackTokenUpdateTimeMs;
+            state.LastAttackTokenUpdateTimeMs = now;
 
             var regen = elapsedMs / minIntervalMs;
             state.AttackTokens = Math.Min(config.MaxAttackTokens, state.AttackTokens + regen);
@@ -194,7 +198,7 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
         var state = this.GetState(player);
         lock (state.Lock)
         {
-            state.LastWalkStartTime = DateTime.MinValue;
+            state.LastWalkStartTimeMs = long.MinValue;
             state.RecentWalks.Clear();
         }
 
@@ -320,7 +324,10 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
 
     private readonly record struct WalkHistoryEntry
     {
-        public DateTime Time { get; init; }
+        /// <summary>
+        /// Gets the <see cref="Environment.TickCount64"/> value when this walk was recorded.
+        /// </summary>
+        public long TimeMs { get; init; }
 
         public Point StartPoint { get; init; }
     }
@@ -336,7 +343,10 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
 
         public double AttackTokens { get; set; }
 
-        public DateTime LastAttackTokenUpdateTime { get; set; } = DateTime.MinValue;
+        /// <summary>
+        /// Gets or sets the <see cref="Environment.TickCount64"/> value of the last processed attack.
+        /// </summary>
+        public long LastAttackTokenUpdateTimeMs { get; set; } = long.MinValue;
 
         public DateTime LastAlertTime { get; set; } = DateTime.MinValue;
 
@@ -344,6 +354,9 @@ public class SpeedHackDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguration
 
         public Queue<WalkHistoryEntry> RecentWalks { get; } = new();
 
-        public DateTime LastWalkStartTime { get; set; } = DateTime.MinValue;
+        /// <summary>
+        /// Gets or sets the <see cref="Environment.TickCount64"/> value of the last walk start.
+        /// </summary>
+        public long LastWalkStartTimeMs { get; set; } = long.MinValue;
     }
 }
