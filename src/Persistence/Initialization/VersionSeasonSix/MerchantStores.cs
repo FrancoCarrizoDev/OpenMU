@@ -18,36 +18,36 @@ internal partial class NpcInitialization
         List<Item> itemList = new()
         {
             this.ItemHelper.CreatePotion(0, 0, 1, 0),     // Apple +0 x1
-            this.ItemHelper.CreatePotion(8, 0, 3, 0),     // Apple +0 x3
+            this.ItemHelper.CreatePotion(8, 0, 50, 0),     // Apple +0 x50
             this.ItemHelper.CreatePotion(16, 0, 1, 1),    // Apple +1 x1
-            this.ItemHelper.CreatePotion(20, 0, 3, 1),    // Apple +1 x3
+            this.ItemHelper.CreatePotion(20, 0, 50, 1),    // Apple +1 x50
 
             this.ItemHelper.CreatePotion(1, 1, 1, 0),     // Small Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(9, 1, 3, 0),     // Small Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(9, 1, 50, 0),     // Small Healing Potion +0 x50
             this.ItemHelper.CreatePotion(17, 1, 1, 1),    // Small Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(21, 1, 3, 1),    // Small Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(21, 1, 50, 1),    // Small Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(2, 2, 1, 0),     // Medium Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(10, 2, 3, 0),    // Medium Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(10, 2, 50, 0),    // Medium Healing Potion +0 x50
             this.ItemHelper.CreatePotion(18, 2, 1, 1),    // Medium Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(22, 2, 3, 1),    // Medium Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(22, 2, 50, 1),    // Medium Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(3, 3, 1, 0),     // Large Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(11, 3, 3, 0),    // Large Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(11, 3, 50, 0),    // Large Healing Potion +0 x50
             this.ItemHelper.CreatePotion(19, 3, 1, 1),    // Large Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(23, 3, 3, 1),    // Large Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(23, 3, 50, 1),    // Large Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(4, 4, 1, 0),     // Small Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(12, 4, 3, 0),    // Small Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(12, 4, 50, 0),    // Small Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(5, 5, 1, 0),     // Medium Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(13, 5, 3, 0),    // Medium Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(13, 5, 50, 0),    // Medium Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(6, 6, 1, 0),     // Large Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(14, 6, 3, 0),    // Large Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(14, 6, 50, 0),    // Large Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(7, 8, 1, 0),    // Antidote +0 x1
-            this.ItemHelper.CreatePotion(15, 8, 3, 0),    // Antidote +0 x3
+            this.ItemHelper.CreatePotion(15, 8, 50, 0),    // Antidote +0 x50
 
             this.ItemHelper.CreateWeapon(24, ItemGroups.Bows, 7, 0, 0, false, false, null), // Bolt
             this.ItemHelper.CreateWeapon(25, ItemGroups.Bows, 7, 1, 0, false, false, null), // Bolt +1
@@ -201,36 +201,36 @@ internal partial class NpcInitialization
         List<Item> itemList = new()
         {
             this.ItemHelper.CreatePotion(0, 0, 1, 0),     // Apple +0 x1
-            this.ItemHelper.CreatePotion(8, 0, 3, 0),     // Apple +0 x3
+            this.ItemHelper.CreatePotion(8, 0, 50, 0),     // Apple +0 x50
             this.ItemHelper.CreatePotion(16, 0, 1, 1),    // Apple +1 x1
-            this.ItemHelper.CreatePotion(20, 0, 3, 1),    // Apple +1 x3
+            this.ItemHelper.CreatePotion(20, 0, 50, 1),    // Apple +1 x50
 
             this.ItemHelper.CreatePotion(1, 1, 1, 0),     // Small Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(9, 1, 3, 0),     // Small Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(9, 1, 50, 0),     // Small Healing Potion +0 x50
             this.ItemHelper.CreatePotion(17, 1, 1, 1),    // Small Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(21, 1, 3, 1),    // Small Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(21, 1, 50, 1),    // Small Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(2, 2, 1, 0),     // Medium Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(10, 2, 3, 0),    // Medium Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(10, 2, 50, 0),    // Medium Healing Potion +0 x50
             this.ItemHelper.CreatePotion(18, 2, 1, 1),    // Medium Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(22, 2, 3, 1),    // Medium Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(22, 2, 50, 1),    // Medium Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(3, 3, 1, 0),     // Large Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(11, 3, 3, 0),    // Large Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(11, 3, 50, 0),    // Large Healing Potion +0 x50
             this.ItemHelper.CreatePotion(19, 3, 1, 1),    // Large Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(23, 3, 3, 1),    // Large Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(23, 3, 50, 1),    // Large Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(4, 4, 1, 0),     // Small Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(12, 4, 3, 0),    // Small Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(12, 4, 50, 0),    // Small Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(5, 5, 1, 0),     // Medium Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(13, 5, 3, 0),    // Medium Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(13, 5, 50, 0),    // Medium Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(6, 6, 1, 0),     // Large Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(14, 6, 3, 0),    // Large Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(14, 6, 50, 0),    // Large Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(7, 8, 1, 0),    // Antidote +0 x1
-            this.ItemHelper.CreatePotion(15, 8, 3, 0),    // Antidote +0 x3
+            this.ItemHelper.CreatePotion(15, 8, 50, 0),    // Antidote +0 x50
 
             this.ItemHelper.CreateOrb(24, 8),
             this.ItemHelper.CreateOrb(25, 9),
@@ -283,36 +283,36 @@ internal partial class NpcInitialization
         List<Item> itemList = new()
         {
             this.ItemHelper.CreatePotion(0, 0, 1, 0),     // Apple +0 x1
-            this.ItemHelper.CreatePotion(8, 0, 3, 0),     // Apple +0 x3
+            this.ItemHelper.CreatePotion(8, 0, 50, 0),     // Apple +0 x50
             this.ItemHelper.CreatePotion(16, 0, 1, 1),    // Apple +1 x1
-            this.ItemHelper.CreatePotion(20, 0, 3, 1),    // Apple +1 x3
+            this.ItemHelper.CreatePotion(20, 0, 50, 1),    // Apple +1 x50
 
             this.ItemHelper.CreatePotion(1, 1, 1, 0),     // Small Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(9, 1, 3, 0),     // Small Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(9, 1, 50, 0),     // Small Healing Potion +0 x50
             this.ItemHelper.CreatePotion(17, 1, 1, 1),    // Small Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(21, 1, 3, 1),    // Small Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(21, 1, 50, 1),    // Small Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(2, 2, 1, 0),     // Medium Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(10, 2, 3, 0),    // Medium Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(10, 2, 50, 0),    // Medium Healing Potion +0 x50
             this.ItemHelper.CreatePotion(18, 2, 1, 1),    // Medium Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(22, 2, 3, 1),    // Medium Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(22, 2, 50, 1),    // Medium Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(3, 3, 1, 0),     // Large Healing Potion +0 x1
-            this.ItemHelper.CreatePotion(11, 3, 3, 0),    // Large Healing Potion +0 x3
+            this.ItemHelper.CreatePotion(11, 3, 50, 0),    // Large Healing Potion +0 x50
             this.ItemHelper.CreatePotion(19, 3, 1, 1),    // Large Healing Potion +1 x1
-            this.ItemHelper.CreatePotion(23, 3, 3, 1),    // Large Healing Potion +1 x3
+            this.ItemHelper.CreatePotion(23, 3, 50, 1),    // Large Healing Potion +1 x50
 
             this.ItemHelper.CreatePotion(4, 4, 1, 0),     // Small Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(12, 4, 3, 0),    // Small Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(12, 4, 50, 0),    // Small Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(5, 5, 1, 0),     // Medium Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(13, 5, 3, 0),    // Medium Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(13, 5, 50, 0),    // Medium Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(6, 6, 1, 0),     // Large Mana Potion +0 x1
-            this.ItemHelper.CreatePotion(14, 6, 3, 0),    // Large Mana Potion +0 x3
+            this.ItemHelper.CreatePotion(14, 6, 50, 0),    // Large Mana Potion +0 x50
 
             this.ItemHelper.CreatePotion(7, 8, 1, 0),    // Antidote +0 x1
-            this.ItemHelper.CreatePotion(15, 8, 3, 0),    // Antidote +0 x3
+            this.ItemHelper.CreatePotion(15, 8, 50, 0),    // Antidote +0 x50
 
             this.ItemHelper.CreateSetItem(24, 3, ItemGroups.Helm, null, 3, 1, true), // Legendary Helm +3+Luck+4
             this.ItemHelper.CreateSetItem(26, 3, ItemGroups.Armor, null, 3, 1, true), // Legendary Armor +3+Luck+4

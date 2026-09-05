@@ -92,7 +92,7 @@ public class Potions : InitializerBase
         apple.DropsFromMonsters = true;
         apple.DropLevel = 1;
         apple.MaximumItemLevel = 1;
-        apple.Durability = 3;
+        apple.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         apple.Value = 5;
         apple.Width = 1;
         apple.Height = 1;
@@ -113,7 +113,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 10;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 10;
         potion.Width = 1;
         potion.Height = 1;
@@ -134,7 +134,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 25;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 20;
         potion.Width = 1;
         potion.Height = 1;
@@ -155,7 +155,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 40;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 30;
         potion.Width = 1;
         potion.Height = 1;
@@ -176,7 +176,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 10;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 10;
         potion.Width = 1;
         potion.Height = 1;
@@ -197,7 +197,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 25;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 20;
         potion.Width = 1;
         potion.Height = 1;
@@ -218,7 +218,7 @@ public class Potions : InitializerBase
         potion.DropsFromMonsters = true;
         potion.MaximumItemLevel = 1;
         potion.DropLevel = 40;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 30;
         potion.Width = 1;
         potion.Height = 1;
@@ -355,7 +355,7 @@ public class Potions : InitializerBase
         potion.Group = 14;
         potion.DropsFromMonsters = true;
         potion.DropLevel = 10;
-        potion.Durability = 3;
+        potion.Durability = 255; // Raised from 3 so a 50x shop pack can stack: see docs/backlog.md.
         potion.Value = 10;
         potion.Width = 1;
         potion.Height = 1;
