@@ -9,13 +9,11 @@ using MUnique.OpenMU.DataModel.Configuration;
 /// <summary>
 /// Initializes the test accounts for the classic "Season 1" style server.
 ///
-/// Only test0-test9 (<see cref="VersionSeasonSix.TestAccounts.LowLevel"/>) are created - they only
-/// use Dark Knight/Dark Wizard/Fairy Elf/Dark Lord, all of which exist in this roster. The rest of
-/// season6's test accounts (Level300, Level400, Ancient, Socket, the Quest* accounts, GameMaster,
-/// GameMaster2, Unlocked) explicitly create Master-class or Summoner/Rage Fighter characters (see
-/// e.g. <see cref="VersionSeasonSix.TestAccounts.Level300.CreateKnight"/> which creates a
-/// BladeMaster), which don't exist here and throw during initialization. Porting a Season-1-
-/// appropriate GM/quest-testing account is tracked as a separate backlog item.
+/// The regular test accounts test0-test9 use Dark Knight/Dark Wizard/Fairy Elf/Dark Lord, all of
+/// which exist in this roster. The additional testgm account is a Season-1-compatible QA account;
+/// the remaining Season 6 test accounts explicitly create Master-class or Summoner/Rage Fighter
+/// characters and are therefore not initialized here. Ten GM accounts (testgm and testgm1-testgm9)
+/// are created so local event smoke tests can run with multiple clients.
 /// </summary>
 internal class TestAccountsInitialization : InitializerBase
 {
@@ -36,6 +34,12 @@ internal class TestAccountsInitialization : InitializerBase
         {
             var level = (i * 10) + 1;
             new VersionSeasonSix.TestAccounts.LowLevel(this.Context, this.GameConfiguration, "test" + i, level).Initialize();
+        }
+
+        for (int i = 0; i < 10; i++)
+        {
+            var accountName = i == 0 ? "testgm" : "testgm" + i;
+            new TestAccounts.GameMaster(this.Context, this.GameConfiguration, accountName).Initialize();
         }
     }
 }

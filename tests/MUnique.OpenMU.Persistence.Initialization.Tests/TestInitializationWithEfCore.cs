@@ -9,6 +9,7 @@ using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.Persistence.EntityFramework;
 using MUnique.OpenMU.Persistence.Initialization.Updates;
 using MUnique.OpenMU.Persistence.InMemory;
@@ -56,6 +57,103 @@ internal class TestInitializationWithEfCore
         await this.AssertIcarusFeatherAndCrestDropGroupsAsync(contextProvider).ConfigureAwait(false);
         await this.AssertCastleSiegeUpdatePlugInAsync(contextProvider).ConfigureAwait(false);
         await this.TestIfItemsFitIntoInventoriesAsync(contextProvider).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Tests the Season 1 rates and VIP level limit.
+    /// </summary>
+    [Test]
+    public async Task TestSeasonOneRatesAsync()
+    {
+        var contextProvider = new InMemoryPersistenceContextProvider();
+        var dataInitialization = new VersionSeasonOne.DataInitialization(contextProvider, new NullLoggerFactory());
+        await dataInitialization.CreateInitialDataAsync(1, true).ConfigureAwait(false);
+
+        using var context = contextProvider.CreateNewConfigurationContext();
+        var gameConfiguration = (await context.GetAsync<GameConfiguration>().ConfigureAwait(false)).Single();
+        var vipMaximumLevel = gameConfiguration.GlobalBaseAttributeValues
+            .Single(value => value.Definition.Id == Stats.VipMaximumLevel.Id);
+        var commonMoneyDrop = gameConfiguration.DropItemGroups
+            .Single(group => group.Description.Value?.StartsWith("The common money drop item group", StringComparison.Ordinal) == true);
+        var commonItemDrop = gameConfiguration.DropItemGroups
+            .Single(group => group.Description.Value?.StartsWith("The common drop item group for random items", StringComparison.Ordinal) == true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(gameConfiguration.MaximumLevel, Is.EqualTo((short)400));
+            Assert.That(gameConfiguration.ExperienceRate, Is.EqualTo(10.0f));
+            Assert.That(vipMaximumLevel.Value, Is.EqualTo(390.0f));
+            Assert.That(commonMoneyDrop.Chance, Is.EqualTo(0.25));
+            Assert.That(commonItemDrop.Chance, Is.EqualTo(0.15));
+        });
+    }
+
+    /// <summary>
+    /// Tests the Season 1 QA account and compact monster spots.
+    /// </summary>
+    [Test]
+    public async Task TestSeasonOneQaDataAsync()
+    {
+        var contextProvider = new InMemoryPersistenceContextProvider();
+        var dataInitialization = new VersionSeasonOne.DataInitialization(contextProvider, new NullLoggerFactory());
+        await dataInitialization.CreateInitialDataAsync(1, true).ConfigureAwait(false);
+
+        using var configurationContext = contextProvider.CreateNewConfigurationContext();
+        var gameConfiguration = (await configurationContext.GetAsync<GameConfiguration>().ConfigureAwait(false)).Single();
+
+        using var playerContext = contextProvider.CreateNewPlayerContext(gameConfiguration);
+        var gameMaster = await playerContext.GetAccountByLoginNameAsync("testgm", "testgm").ConfigureAwait(false);
+
+        Assert.That(gameMaster, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(gameMaster!.State, Is.EqualTo(AccountState.GameMaster));
+            Assert.That(gameMaster.Characters, Has.Count.EqualTo(4));
+            Assert.That(gameMaster.UnlockedCharacterClasses.Any(c => c.Number == 12), Is.True);
+        });
+
+        foreach (var character in gameMaster!.Characters)
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(character.CharacterStatus, Is.EqualTo(CharacterStatus.GameMaster));
+                Assert.That(character.LevelUpPoints, Is.EqualTo(20_000));
+            });
+        }
+
+        for (var i = 1; i < 10; i++)
+        {
+            var accountName = "testgm" + i;
+            var additionalGameMaster = await playerContext.GetAccountByLoginNameAsync(accountName, accountName).ConfigureAwait(false);
+            Assert.That(additionalGameMaster, Is.Not.Null);
+            Assert.That(additionalGameMaster!.State, Is.EqualTo(AccountState.GameMaster));
+            Assert.That(additionalGameMaster.Characters, Has.Count.EqualTo(4));
+        }
+
+        var expectedSpots = new[]
+        {
+            (MapNumber: (byte)0, MonsterNumber: (short)2, X1: (byte)150, X2: (byte)160, Y1: (byte)50, Y2: (byte)60),
+            (MapNumber: (byte)3, MonsterNumber: (short)26, X1: (byte)175, X2: (byte)185, Y1: (byte)50, Y2: (byte)60),
+            (MapNumber: (byte)2, MonsterNumber: (short)21, X1: (byte)30, X2: (byte)40, Y1: (byte)20, Y2: (byte)30),
+            (MapNumber: (byte)1, MonsterNumber: (short)8, X1: (byte)40, X2: (byte)50, Y1: (byte)115, Y2: (byte)125),
+            (MapNumber: (byte)4, MonsterNumber: (short)40, X1: (byte)5, X2: (byte)15, Y1: (byte)95, Y2: (byte)105),
+        };
+
+        foreach (var expectedSpot in expectedSpots)
+        {
+            var map = gameConfiguration.Maps.Single(m => m.Number == expectedSpot.MapNumber && m.Discriminator == 0);
+            Assert.That(
+                map.MonsterSpawns.Any(
+                    spawn => spawn.MonsterDefinition?.Number == expectedSpot.MonsterNumber
+                             && spawn.X1 == expectedSpot.X1
+                             && spawn.X2 == expectedSpot.X2
+                             && spawn.Y1 == expectedSpot.Y1
+                             && spawn.Y2 == expectedSpot.Y2
+                             && spawn.Quantity == 8
+                             && spawn.SpawnTrigger == SpawnTrigger.Automatic),
+                Is.True,
+                $"Missing Season 1 spot on map {expectedSpot.MapNumber} for monster {expectedSpot.MonsterNumber}.");
+        }
     }
 
     /// <summary>

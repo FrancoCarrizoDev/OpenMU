@@ -12,8 +12,8 @@ using MUnique.OpenMU.PlugIns;
 
 /// <summary>
 /// Data initialization plugin for a classic "Season 1" style server: 2nd class change,
-/// Magic Gladiator, Dark Lord and Castle Siege, without Master classes, Harmony, sockets
-/// or Summoner.
+/// Magic Gladiator and Dark Lord, with Castle Siege deferred until the server has clans and
+/// population, without Master classes, Harmony, sockets or Summoner.
 ///
 /// The game client protocol is unchanged from Season 6 Episode 3 (<see cref="CreateGameClientDefinition"/>
 /// mirrors it exactly) - only the server-side content differs. Players still connect with a

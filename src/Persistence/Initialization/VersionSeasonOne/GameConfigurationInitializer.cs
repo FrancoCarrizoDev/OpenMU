@@ -18,7 +18,8 @@ using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Items;
 /// Initializes the <see cref="GameConfiguration"/> for the classic "Season 1" style server.
 ///
 /// This is a pruned copy of <see cref="VersionSeasonSix.GameConfigurationInitializer"/> (see
-/// ADR-0001 in docs/adr): same maps, NPCs, items and events, except it uses a
+/// ADR-0001/ADR-0004 in docs/adr): shared NPCs, items and event initializers plus the selected map roster,
+/// except it uses a
 /// <see cref="CharacterClassInitialization"/> without Master classes / Summoner / Rage Fighter.
 ///
 /// Harmony and sockets are NOT actually removable by just skipping their initializers or
@@ -32,6 +33,11 @@ using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Items;
 /// </summary>
 public class GameConfigurationInitializer : GameConfigurationInitializerBase
 {
+    private const short MaximumLevel = 400;
+    private const short VipMaximumLevel = 390;
+    private const float ExperienceRate = 10.0f;
+    private const double ItemDropRate = 0.5;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="GameConfigurationInitializer"/> class.
     /// </summary>
@@ -62,6 +68,11 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
     public override void Initialize()
     {
         base.Initialize();
+
+        this.GameConfiguration.MaximumLevel = MaximumLevel;
+        this.GameConfiguration.ExperienceRate = ExperienceRate;
+        this.GameConfiguration.GlobalBaseAttributeValues.Add(
+            this.Context.CreateNew<ConstValueAttribute>(VipMaximumLevel, Stats.VipMaximumLevel.GetPersistent(this.GameConfiguration)));
 
         this.GameConfiguration.ItemOptions.Add(this.CreateOptionDefinition(Stats.BaseDamageBonus, ItemOptionDefinitionNumbers.PhysicalAndWizardryAttack));
         this.GameConfiguration.ItemOptions.Add(this.CreateOptionDefinition(Stats.CurseBaseDmg, ItemOptionDefinitionNumbers.CurseAttack));
@@ -110,12 +121,12 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new Version095d.Events.DevilSquareInitializer(this.Context, this.GameConfiguration).Initialize();
         new BloodCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         new Events.ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
-        new CastleSiegeInitializer(this.Context, this.GameConfiguration).Initialize();
+        this.ApplyItemDropRate();
     }
 
     /// <summary>
     /// Wires the Rena <see cref="DropItemGroup"/> (created in <see cref="Misc"/>) to the Blood Castle
-    /// and Devil Square 5-7 event maps, so it only drops there instead of everywhere.
+    /// event maps, so it only drops there instead of everywhere.
     /// </summary>
     private void WireRenaDropToEventMaps()
     {
@@ -127,7 +138,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         }
 
         var eventMaps = this.GameConfiguration.Maps
-            .Where(m => m.Name.Value?.StartsWith("Blood Castle") is true || m.Name.Value is "Devil Square 5" or "Devil Square 6" or "Devil Square 7");
+            .Where(m => m.Name.Value?.StartsWith("Blood Castle") is true);
         foreach (var map in eventMaps)
         {
             if (!map.DropItemGroups.Contains(renaDropGroup))
@@ -150,6 +161,14 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         this.CreateJewelMix(9, 44, 0xE, 143); // Higher Refine Stone
 
         // Jewel of Harmony (mix number 6) intentionally skipped - out of scope for Season 1.
+    }
+
+    private void ApplyItemDropRate()
+    {
+        foreach (var dropGroup in this.GameConfiguration.DropItemGroups.Where(group => group.Chance > 0 && group.Chance < 1))
+        {
+            dropGroup.Chance *= ItemDropRate;
+        }
     }
 
     private void CreateJewelMix(byte mixNumber, int itemNumber, int itemGroup, int packedJewelId)

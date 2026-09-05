@@ -10,12 +10,12 @@ using MUnique.OpenMU.DataModel.Configuration;
 /// Gates initialization for the classic "Season 1" style server.
 ///
 /// This is <see cref="VersionSeasonSix.Gates"/> with every gate/warp entry removed that points at a
-/// map excluded by <see cref="GameMapsInitializer"/> (see the remarks there for which maps and why).
+/// map excluded by <see cref="GameMapsInitializer"/> (see the remarks there for which maps and why),
+/// while retaining the selected Kanturu, Aida and Raklion routes.
 /// It can't be a subclass that overrides just the excluded parts: all of season6's gate-building
 /// methods are private and one another's blocks reference each other's target gates by number
-/// (e.g. Valley of Loren - a map we keep - has an entrance gate whose *target* is physically on
-/// Crywolf Fortress - a map we exclude), so this is a full copy with the affected lines removed
-/// rather than a diff-friendly override.
+/// (e.g. the Aida routes include cross-connections to Karutan, which remains excluded), so this is
+/// a full copy with the affected lines removed rather than a diff-friendly override.
 ///
 /// Also drops <c>CreateDuelConfiguration</c> entirely: Duel Arena's only entrance is via Vulcanus,
 /// both excluded. Leaving <see cref="GameConfiguration.DuelConfiguration"/> unset is safe and not
@@ -73,6 +73,15 @@ public class Gates : InitializerBase
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(21, "Tarkan", 8000, 140, gates[57]));
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(22, "Tarkan2", 8500, 140, gates[77]));
         this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(23, "Icarus", 10000, 170, gates[63]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(25, "Aida1", 8500, 150, gates[119]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(27, "Aida2", 8500, 150, gates[140]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(28, "KanturuRuins1", 9000, 160, gates[138]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(29, "KanturuRuins2", 9000, 160, gates[141]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(30, "KanturuRelics", 12000, 230, gates[139]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(33, "PeaceSwamp", 15000, 400, gates[273]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(34, "Raklion", 15000, 280, gates[287]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(45, "KanturuRuins3", 15000, 160, gates[334]));
+        this.GameConfiguration.WarpList.Add(this.CreateWarpInfo(48, "LaCleon", 15000, 280, gates[287]));
     }
 
     private WarpInfo CreateWarpInfo(ushort index, string name, int costs, int levelRequirement, ExitGate gate)
@@ -220,21 +229,42 @@ public class Gates : InitializerBase
         targetGates.Add(93, this.CreateExitGate(maps[29], 10, 16, 17, 22, 0));
         targetGates.Add(116, this.CreateExitGate(maps[36], 10, 16, 17, 22, 0));
 
-        // Valley of Loren
-        targetGates.Add(94, this.CreateExitGate(maps[30], 88, 31, 102, 46, 0, true));
-        targetGates.Add(100, this.CreateExitGate(maps[30], 39, 14, 142, 50, 0, true));
-        targetGates.Add(101, this.CreateExitGate(maps[30], 84, 180, 100, 222, 0, true));
-        targetGates.Add(104, this.CreateExitGate(maps[30], 87, 209, 100, 232, 0, true));
-        targetGates.Add(105, this.CreateExitGate(maps[30], 72, 10, 104, 199, 0, true));
-        targetGates.Add(106, this.CreateExitGate(maps[30], 131, 92, 138, 94, 0, true));
-        targetGates.Add(97, this.CreateExitGate(maps[30], 164, 198, 187, 209, 0));
-        targetGates.Add(99, this.CreateExitGate(maps[30], 90, 236, 99, 239, 0));
-        targetGates.Add(103, this.CreateExitGate(maps[30], 29, 37, 30, 42, 0));
-        targetGates.Add(110, this.CreateExitGate(maps[30], 131, 92, 138, 94, 0));
-        targetGates.Add(124, this.CreateExitGate(maps[30], 155, 37, 158, 43, 0));
+        // Aida
+        targetGates.Add(119, this.CreateExitGate(maps[33], 82, 8, 87, 14, 0, true));
+        targetGates.Add(140, this.CreateExitGate(maps[33], 186, 173, 190, 177, 0));
+        targetGates.Add(113, this.CreateExitGate(maps[33], 76, 9, 78, 16, 0));
 
-        // Land of Trials
-        targetGates.Add(95, this.CreateExitGate(maps[31], 60, 10, 69, 19, 0));
+        // Kanturu Event
+        targetGates.Add(133, this.CreateExitGate(maps[39], 196, 56, 201, 57, 0, true));
+        targetGates.Add(134, this.CreateExitGate(maps[39], 78, 93, 82, 95, 0));
+        targetGates.Add(135, this.CreateExitGate(maps[39], 78, 93, 82, 95, 0));
+
+        // Kanturu
+        targetGates.Add(138, this.CreateExitGate(maps[37], 19, 217, 21, 219, 0, true));
+        targetGates.Add(141, this.CreateExitGate(maps[37], 205, 36, 208, 41, 0));
+        targetGates.Add(334, this.CreateExitGate(maps[37], 66, 183, 74, 191, 0));
+        targetGates.Add(126, this.CreateExitGate(maps[37], 17, 219, 21, 220, 0));
+        targetGates.Add(132, this.CreateExitGate(maps[37], 85, 89, 86, 92, 0));
+
+        // Kanturu Relics
+        targetGates.Add(137, this.CreateExitGate(maps[38], 71, 102, 82, 109, 0, true));
+        targetGates.Add(139, this.CreateExitGate(maps[38], 71, 104, 72, 107, 0));
+        targetGates.Add(130, this.CreateExitGate(maps[38], 70, 104, 70, 107, 0));
+        targetGates.Add(136, this.CreateExitGate(maps[38], 137, 162, 143, 163, 0));
+
+        // Swamp Of Calmness
+        targetGates.Add(273, this.CreateExitGate(maps[56], 135, 105, 142, 111, 0, true));
+        targetGates.Add(275, this.CreateExitGate(maps[56], 189, 190, 191, 193, 0));
+        targetGates.Add(278, this.CreateExitGate(maps[56], 204, 10, 206, 14, 0));
+        targetGates.Add(281, this.CreateExitGate(maps[56], 65, 47, 67, 48, 0));
+        targetGates.Add(284, this.CreateExitGate(maps[56], 62, 174, 63, 179, 0));
+
+        // LaCleon
+        targetGates.Add(287, this.CreateExitGate(maps[57], 222, 211, 225, 212, 0, true));
+        targetGates.Add(293, this.CreateExitGate(maps[57], 174, 23, 175, 25, 0));
+
+        // LaCleon Boss
+        targetGates.Add(291, this.CreateExitGate(maps[58], 160, 24, 161, 27, 0));
 
         return targetGates;
     }
@@ -272,11 +302,24 @@ public class Gates : InitializerBase
         maps[8].EnterGates.Add(this.CreateEnterGate(55, targetGates[56], 246, 40, 247, 44, 130));
         maps[4].EnterGates.Add(this.CreateEnterGate(62, targetGates[63], 17, 250, 19, 250, 160));
         maps[10].EnterGates.Add(this.CreateEnterGate(64, targetGates[65], 14, 12, 16, 12, 50));
-        maps[30].EnterGates.Add(this.CreateEnterGate(96, targetGates[97], 93, 242, 95, 243, 0));
-        maps[30].EnterGates.Add(this.CreateEnterGate(98, targetGates[99], 160, 203, 161, 205, 0));
-        maps[0].EnterGates.Add(this.CreateEnterGate(102, targetGates[103], 239, 14, 240, 15, 10));
-        maps[30].EnterGates.Add(this.CreateEnterGate(107, targetGates[108], 28, 40, 28, 41, 0));
-        maps[31].EnterGates.Add(this.CreateEnterGate(109, targetGates[110], 59, 7, 63, 8, 0));
+        maps[3].EnterGates.Add(this.CreateEnterGate(120, targetGates[113], 220, 30, 226, 30, 130));
+        maps[33].EnterGates.Add(this.CreateEnterGate(121, targetGates[122], 74, 9, 74, 13, 10));
+        maps[8].EnterGates.Add(this.CreateEnterGate(125, targetGates[126], 6, 199, 6, 201, 150));
+        maps[37].EnterGates.Add(this.CreateEnterGate(127, targetGates[128], 17, 220, 19, 222, 130));
+        maps[37].EnterGates.Add(this.CreateEnterGate(129, targetGates[130], 89, 89, 89, 92, 220));
+        maps[38].EnterGates.Add(this.CreateEnterGate(131, targetGates[132], 69, 104, 69, 107, 150));
+        maps[56].EnterGates.Add(this.CreateEnterGate(274, targetGates[275], 139, 125, 139, 126, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(276, targetGates[273], 185, 187, 186, 188, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(277, targetGates[278], 149, 109, 150, 109, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(279, targetGates[273], 197, 12, 197, 14, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(280, targetGates[281], 139, 95, 140, 95, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(282, targetGates[273], 68, 52, 69, 53, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(283, targetGates[284], 124, 109, 124, 110, 250));
+        maps[56].EnterGates.Add(this.CreateEnterGate(285, targetGates[273], 57, 176, 57, 177, 250));
+        maps[2].EnterGates.Add(this.CreateEnterGate(286, targetGates[287], 52, 92, 54, 92, 240));
+        maps[57].EnterGates.Add(this.CreateEnterGate(288, targetGates[289], 223, 215, 225, 215, 240));
+        maps[57].EnterGates.Add(this.CreateEnterGate(290, targetGates[291], 171, 23, 171, 25, 240));
+        maps[58].EnterGates.Add(this.CreateEnterGate(292, targetGates[293], 167, 24, 167, 25, 240));
     }
 
     private EnterGate CreateEnterGate(short number, ExitGate targetGate, byte x1, byte y1, byte x2, byte y2, short levelRequirement)
