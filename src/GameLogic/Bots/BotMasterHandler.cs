@@ -68,7 +68,7 @@ internal static class BotMasterHandler
             return false;
         }
 
-        if ((int)attributes[Stats.Level] < player.GameContext.Configuration.MaximumLevel)
+        if ((int)attributes[Stats.Level] < player.GetMaximumCharacterLevel())
         {
             return false;
         }

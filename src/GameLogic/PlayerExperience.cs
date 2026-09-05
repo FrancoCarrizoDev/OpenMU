@@ -143,7 +143,7 @@ internal sealed class PlayerExperience
         }
 
         var currentLevel = (short)attributes[Stats.Level];
-        var isMaxLevel = currentLevel == this._player.GameContext.Configuration.MaximumLevel;
+        var isMaxLevel = currentLevel == this._player.GetMaximumCharacterLevel();
         isMasterExperience = characterClass.IsMasterClass && isMaxLevel;
         return true;
     }
@@ -198,9 +198,10 @@ internal sealed class PlayerExperience
     {
         var player = this._player;
         var remainingExperience = experience;
+        var maximumLevel = player.GetMaximumCharacterLevel();
         while (remainingExperience > 0)
         {
-            if (player.Attributes![Stats.Level] >= player.GameContext.Configuration.MaximumLevel)
+            if (player.Attributes![Stats.Level] >= maximumLevel)
             {
                 await player.InvokeViewPlugInAsync<IAddExperiencePlugIn>(p => p.AddExperienceAsync(0, killedObject, ExperienceType.MaxLevelReached)).ConfigureAwait(false);
                 return;
@@ -237,7 +238,7 @@ internal sealed class PlayerExperience
 
             remainingExperience -= (int)gainedExperience;
             if (remainingExperience <= 0
-                || player.Attributes[Stats.Level] >= player.GameContext.Configuration.MaximumLevel
+                || player.Attributes[Stats.Level] >= maximumLevel
                 || player.GameContext.Configuration.PreventExperienceOverflow)
             {
                 return;

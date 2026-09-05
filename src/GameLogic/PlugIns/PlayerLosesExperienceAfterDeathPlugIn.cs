@@ -57,7 +57,7 @@ public class PlayerLosesExperienceAfterDeathPlugIn : IAttackableGotKilledPlugIn,
         }
         else
         {
-            if (this.CalculateNewExperience(selectedCharacter, selectedCharacter.Experience, player.GameContext.ExperienceTable, attributes, Stats.Level, player.GameContext.Configuration.MaximumLevel) is { } newExperience)
+            if (this.CalculateNewExperience(selectedCharacter, selectedCharacter.Experience, player.GameContext.ExperienceTable, attributes, Stats.Level, player.GetMaximumCharacterLevel()) is { } newExperience)
             {
                 selectedCharacter.Experience = newExperience;
             }

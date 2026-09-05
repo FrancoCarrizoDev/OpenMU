@@ -47,9 +47,10 @@ public class SetLevelChatCommandPlugIn : ChatCommandPlugInBase<SetLevelChatComma
             return;
         }
 
-        if (arguments is null || arguments.Level < 1 || arguments.Level > targetPlayer.GameContext.Configuration.MaximumLevel)
+        var maximumLevel = targetPlayer.GetMaximumCharacterLevel();
+        if (arguments is null || arguments.Level < 1 || arguments.Level > maximumLevel)
         {
-            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.InvalidCharacterLevel), targetPlayer.GameContext.Configuration.MaximumLevel).ConfigureAwait(false);
+            await player.ShowLocalizedBlueMessageAsync(nameof(PlayerMessage.InvalidCharacterLevel), maximumLevel).ConfigureAwait(false);
             return;
         }
 

@@ -59,8 +59,9 @@ public static class PlayerTestHelper
     /// Gets a test player with the specified game context.
     /// </summary>
     /// <param name="gameContext">The game context.</param>
+    /// <param name="isVip">Whether the account should have a VIP flag.</param>
     /// <returns>The test player.</returns>
-    public static async ValueTask<Player> CreatePlayerAsync(IGameContext gameContext)
+    public static async ValueTask<Player> CreatePlayerAsync(IGameContext gameContext, bool isVip = false)
     {
         var characterMock = new Mock<Character>();
         characterMock.SetupAllProperties();
@@ -131,7 +132,9 @@ public static class PlayerTestHelper
         }
 
         var accountMock = new Mock<Account>();
-        accountMock.Setup(mock => mock.Attributes).Returns(new List<StatAttribute>());
+        accountMock.Setup(mock => mock.Attributes).Returns(isVip
+            ? new List<StatAttribute> { new(Stats.IsVip, 1) }
+            : new List<StatAttribute>());
         accountMock.Setup(mock => mock.UnlockedCharacterClasses).Returns(new List<CharacterClass>());
         var player = new TestPlayer(gameContext) { Account = accountMock.Object };
         await player.PlayerState.TryAdvanceToAsync(PlayerState.LoginScreen).ConfigureAwait(false);

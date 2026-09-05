@@ -439,7 +439,7 @@ public sealed class CombatHandler
     {
         var configuration = player.GameContext.Configuration;
         var isMastered = player.SelectedCharacter?.CharacterClass?.IsMasterClass == true
-                         && (player.Attributes?[Stats.Level] ?? 0) >= configuration.MaximumLevel;
+                         && (player.Attributes?[Stats.Level] ?? 0) >= player.GetMaximumCharacterLevel();
 
         return isMastered && monsterLevel >= configuration.MinimumMonsterLevelForMasterExperience
             ? MaxHitsToKill * MasterHitBudgetFactor

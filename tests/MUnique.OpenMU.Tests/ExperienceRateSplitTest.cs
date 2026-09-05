@@ -263,6 +263,27 @@ public class ExperienceRateSplitTest
         Assert.That((int)player.Attributes![Stats.Level], Is.EqualTo(2));
     }
 
+    /// <summary>
+    /// Verifies that a VIP player uses the configured VIP maximum character level.
+    /// </summary>
+    [Test]
+    public async ValueTask VipCharacterStopsAtConfiguredVipMaximumLevelAsync()
+    {
+        var context = this.CreateGameServerContext(
+            normalExperienceRate: 1.0f,
+            globalMasterExperienceRate: 1.0f,
+            maximumLevel: 400,
+            maximumMasterLevel: 200);
+        context.Configuration.GlobalBaseAttributeValues.Add(new MUnique.OpenMU.Persistence.BasicModel.ConstValueAttribute(390, Stats.VipMaximumLevel));
+
+        var player = await PlayerTestHelper.CreatePlayerAsync(context, isVip: true).ConfigureAwait(false);
+        player.Attributes![Stats.Level] = 390;
+
+        await player.AddExperienceAsync(int.MaxValue, null).ConfigureAwait(false);
+
+        Assert.That((int)player.Attributes[Stats.Level], Is.EqualTo(390));
+    }
+
     private static Mock<IAttackable> CreateKilledObject(float level)
     {
         var attributes = new Mock<IAttributeSystem>();

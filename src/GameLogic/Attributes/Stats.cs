@@ -1522,6 +1522,12 @@ public class Stats
     public static AttributeDefinition IsVip { get; } = new(new Guid("195474D6-59A2-4033-9C30-8628ECC0097E"), "Is VIP", "The flag, if an account is a VIP.");
 
     /// <summary>
+    /// Gets the configured maximum character level for VIP accounts. A value of zero means that the
+    /// regular game maximum applies.
+    /// </summary>
+    public static AttributeDefinition VipMaximumLevel { get; } = new(new Guid("3C8F0D4A-0E0C-4C26-9B7E-6E6C4A4D2B11"), "VIP Maximum Level", "The maximum character level allowed for VIP accounts.");
+
+    /// <summary>
     /// Gets the attribute for the number of points this class will receive for reset, overwrites the default <see cref="Resets.ResetConfiguration.PointsPerReset"/> value.
     /// </summary>
     public static AttributeDefinition PointsPerReset { get; } = new(new Guid("a34f4f57-b364-4cdb-9989-64cedd2cd831"), "Points Per Reset", "The number of points the player will receive for reset, overwrites the default 'PointsPerReset' value of the reset configuration.");

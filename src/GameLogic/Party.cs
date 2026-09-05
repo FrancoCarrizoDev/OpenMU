@@ -374,7 +374,7 @@ public sealed class Party : AsyncDisposable
     private static async ValueTask<int> AwardExperienceAsync(Player player, float perLevel, IAttackable killed)
     {
         var attributes = player.Attributes!;
-        var isAtMaxLevel = (short)attributes[Stats.Level] == player.GameContext.Configuration.MaximumLevel;
+        var isAtMaxLevel = (short)attributes[Stats.Level] == player.GetMaximumCharacterLevel();
         var isMasterClass = player.SelectedCharacter?.CharacterClass?.IsMasterClass ?? false;
 
         if (isAtMaxLevel && isMasterClass)
