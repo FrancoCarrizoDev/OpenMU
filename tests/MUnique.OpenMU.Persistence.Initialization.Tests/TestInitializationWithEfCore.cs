@@ -132,11 +132,11 @@ internal class TestInitializationWithEfCore
 
         var expectedSpots = new[]
         {
-            (MapNumber: (byte)0, MonsterNumber: (short)2, X1: (byte)150, X2: (byte)160, Y1: (byte)50, Y2: (byte)60),
-            (MapNumber: (byte)3, MonsterNumber: (short)26, X1: (byte)175, X2: (byte)185, Y1: (byte)50, Y2: (byte)60),
-            (MapNumber: (byte)2, MonsterNumber: (short)21, X1: (byte)30, X2: (byte)40, Y1: (byte)20, Y2: (byte)30),
-            (MapNumber: (byte)1, MonsterNumber: (short)8, X1: (byte)40, X2: (byte)50, Y1: (byte)115, Y2: (byte)125),
-            (MapNumber: (byte)4, MonsterNumber: (short)40, X1: (byte)5, X2: (byte)15, Y1: (byte)95, Y2: (byte)105),
+            (MapNumber: (byte)0, MonsterNumber: (short)2, X1: (byte)150, X2: (byte)158, Y1: (byte)50, Y2: (byte)58),
+            (MapNumber: (byte)3, MonsterNumber: (short)26, X1: (byte)175, X2: (byte)183, Y1: (byte)50, Y2: (byte)58),
+            (MapNumber: (byte)2, MonsterNumber: (short)21, X1: (byte)30, X2: (byte)38, Y1: (byte)20, Y2: (byte)28),
+            (MapNumber: (byte)1, MonsterNumber: (short)8, X1: (byte)40, X2: (byte)48, Y1: (byte)115, Y2: (byte)123),
+            (MapNumber: (byte)4, MonsterNumber: (short)40, X1: (byte)5, X2: (byte)13, Y1: (byte)95, Y2: (byte)103),
         };
 
         foreach (var expectedSpot in expectedSpots)
@@ -149,7 +149,7 @@ internal class TestInitializationWithEfCore
                              && spawn.X2 == expectedSpot.X2
                              && spawn.Y1 == expectedSpot.Y1
                              && spawn.Y2 == expectedSpot.Y2
-                             && spawn.Quantity == 8
+                             && spawn.Quantity == 7
                              && spawn.SpawnTrigger == SpawnTrigger.Automatic),
                 Is.True,
                 $"Missing Season 1 spot on map {expectedSpot.MapNumber} for monster {expectedSpot.MonsterNumber}.");

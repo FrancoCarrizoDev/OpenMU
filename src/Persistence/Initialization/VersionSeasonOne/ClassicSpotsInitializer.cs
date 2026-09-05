@@ -17,32 +17,33 @@ internal sealed class ClassicSpotsInitializer : InitializerBase
     private static readonly (byte MapNumber, short MonsterNumber, byte X1, byte X2, byte Y1, byte Y2, short Quantity)[] Spots =
     {
         // Lorencia: starter spots.
-        (0, 2, 150, 160, 50, 60, 8),
-        (0, 3, 195, 205, 120, 130, 8),
-        (0, 0, 205, 215, 50, 60, 8),
-        (0, 1, 45, 55, 100, 110, 8),
+        (0, 2, 150, 158, 50, 58, 7),
+        (0, 3, 195, 203, 120, 128, 7),
+        (0, 0, 205, 213, 50, 58, 7),
+        (0, 1, 45, 53, 100, 108, 7),
 
         // Noria: starter and early progression spots.
-        (3, 26, 175, 185, 50, 60, 8),
-        (3, 27, 210, 220, 70, 80, 8),
-        (3, 28, 70, 80, 175, 185, 8),
-        (3, 29, 150, 160, 200, 210, 8),
+        (3, 26, 175, 183, 50, 58, 7),
+        (3, 27, 210, 218, 70, 78, 7),
+        (3, 28, 70, 78, 175, 183, 7),
+        (3, 29, 150, 158, 200, 208, 7),
 
-        // Devias: the first mid-level spots.
-        (2, 21, 30, 40, 20, 30, 8),
-        (2, 22, 60, 70, 70, 80, 8),
-        (2, 19, 205, 215, 215, 225, 8),
-        (2, 20, 220, 230, 215, 225, 8),
+        // Devias: the first mid-level spots. Yeti and Elite Yeti are pulled apart
+        // so their boxes no longer touch and merge into a single crowded mass.
+        (2, 21, 30, 38, 20, 28, 7),
+        (2, 22, 60, 68, 70, 78, 7),
+        (2, 19, 195, 203, 200, 208, 7),
+        (2, 20, 225, 233, 225, 233, 7),
 
         // Dungeon: concentrated routes instead of isolated single spawns.
-        (1, 8, 40, 50, 115, 125, 8),
-        (1, 14, 100, 110, 215, 225, 8),
-        (1, 11, 135, 145, 205, 215, 8),
-        (1, 17, 230, 240, 165, 175, 8),
+        (1, 8, 40, 48, 115, 123, 7),
+        (1, 14, 100, 108, 215, 223, 7),
+        (1, 11, 135, 143, 205, 213, 7),
+        (1, 17, 230, 238, 165, 173, 7),
 
         // Lost Tower: compact spots for the next progression range.
-        (4, 40, 5, 15, 95, 105, 8),
-        (4, 36, 190, 200, 120, 130, 8),
+        (4, 40, 5, 13, 95, 103, 7),
+        (4, 36, 190, 198, 120, 128, 7),
     };
 
     /// <summary>
