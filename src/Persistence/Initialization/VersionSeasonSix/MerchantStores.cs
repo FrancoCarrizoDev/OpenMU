@@ -162,6 +162,10 @@ internal partial class NpcInitialization
             this.ItemHelper.CreateScroll(4, 5),   // Scroll of Teleport
             this.ItemHelper.CreateScroll(5, 6),   // Scroll of Ice
             this.ItemHelper.CreateScroll(6, 0),   // Scroll of Poison
+            this.ItemHelper.CreateScroll(8, 4),   // Scroll of Flame
+            this.ItemHelper.CreateScroll(9, 7),   // Scroll of Twister
+            this.ItemHelper.CreateScroll(10, 8),  // Scroll of Evil Spirit
+            this.ItemHelper.CreateScroll(11, 9),  // Scroll of Hellfire
 
             this.ItemHelper.CreateOrb(7, 13),     // Orb of Impale
             this.ItemHelper.CreateOrb(15, 7),     // Orb of Twisting Slash
