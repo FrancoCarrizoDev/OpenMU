@@ -108,6 +108,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new Jewelery(this.Context, this.GameConfiguration).Initialize();
         new AncientSets(this.Context, this.GameConfiguration).Initialize();
         new BoxOfLuck(this.Context, this.GameConfiguration).Initialize();
+        this.ExcludeItemsForUnavailableClassesFromMonsterDrops();
         this.CreateJewelMixes();
         new NpcInitialization(this.Context, this.GameConfiguration).Initialize();
         new InvasionMobsInitialization(this.Context, this.GameConfiguration).Initialize();
@@ -168,6 +169,17 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         foreach (var dropGroup in this.GameConfiguration.DropItemGroups.Where(group => group.Chance > 0 && group.Chance < 1))
         {
             dropGroup.Chance *= ItemDropRate;
+        }
+    }
+
+    private void ExcludeItemsForUnavailableClassesFromMonsterDrops()
+    {
+        // Missing classes are omitted from QualifiedCharacters during item initialization.
+        foreach (var item in this.GameConfiguration.Items.Where(item => item.DropsFromMonsters
+                                                                        && item.ItemSlot is not null
+                                                                        && !item.QualifiedCharacters.Any()))
+        {
+            item.DropsFromMonsters = false;
         }
     }
 

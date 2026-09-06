@@ -89,6 +89,29 @@ internal class TestInitializationWithEfCore
     }
 
     /// <summary>
+    /// Tests that equipment for classes which are not part of the Season 1 roster is excluded from random monster drops.
+    /// </summary>
+    [Test]
+    public async Task TestSeasonOneRandomDropsExcludeUnavailableClassEquipmentAsync()
+    {
+        var contextProvider = new InMemoryPersistenceContextProvider();
+        var dataInitialization = new VersionSeasonOne.DataInitialization(contextProvider, new NullLoggerFactory());
+        await dataInitialization.CreateInitialDataAsync(1, true).ConfigureAwait(false);
+
+        using var context = contextProvider.CreateNewConfigurationContext();
+        var gameConfiguration = (await context.GetAsync<GameConfiguration>().ConfigureAwait(false)).Single();
+        var unavailableClassEquipment = gameConfiguration.Items.Where(item => item.DropsFromMonsters
+                                                                              && item.ItemSlot is not null
+                                                                              && !item.QualifiedCharacters.Any());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unavailableClassEquipment, Is.Empty);
+            Assert.That(gameConfiguration.Items.Single(item => item.Name == "Small Healing Potion").DropsFromMonsters, Is.True);
+        });
+    }
+
+    /// <summary>
     /// Tests the Season 1 QA account and compact monster spots.
     /// </summary>
     [Test]
