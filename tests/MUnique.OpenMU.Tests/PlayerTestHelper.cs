@@ -28,6 +28,17 @@ public static class PlayerTestHelper
     /// <returns>The test player.</returns>
     public static async ValueTask<Player> CreatePlayerAsync()
     {
+        return await CreatePlayerAsync(CreateGameContext()).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Creates a new in-memory game context, usable to further customize the configuration
+    /// (e.g. <see cref="GameConfiguration.MaximumLevel"/> or <see cref="GameConfiguration.GlobalBaseAttributeValues"/>)
+    /// before creating a player with it.
+    /// </summary>
+    /// <returns>The game context.</returns>
+    public static GameContext CreateGameContext()
+    {
         var gameConfig = new Mock<GameConfiguration>();
         gameConfig.SetupAllProperties();
         gameConfig.Setup(c => c.Maps).Returns(new List<GameMapDefinition>());
@@ -52,7 +63,7 @@ public static class PlayerTestHelper
         var gameContext = new GameContext(gameConfig.Object, new InMemoryPersistenceContextProvider(), mapInitializer, new NullLoggerFactory(), new PlugInManager(null, new NullLoggerFactory(), null, null), NullDropGenerator.Instance, new ConfigurationChangeMediator());
         mapInitializer.PlugInManager = gameContext.PlugInManager;
         mapInitializer.PathFinderPool = gameContext.PathFinderPool;
-        return await CreatePlayerAsync(gameContext).ConfigureAwait(false);
+        return gameContext;
     }
 
     /// <summary>

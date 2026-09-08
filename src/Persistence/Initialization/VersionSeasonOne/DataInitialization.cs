@@ -5,8 +5,10 @@
 namespace MUnique.OpenMU.Persistence.Initialization.VersionSeasonOne;
 
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel.Configuration;
+using MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.Network.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
@@ -53,6 +55,26 @@ public class DataInitialization : DataInitializationBase
 
     /// <inheritdoc/>
     protected override IGameMapsInitializer GameMapsInitializer => new GameMapsInitializer(this.Context, this.GameConfiguration);
+
+    /// <inheritdoc />
+    protected override void ConfigurePlugInConfigurations(PlugInManager plugInManager, ReferenceHandler referenceHandler)
+    {
+        var resetConfiguration = this.GameConfiguration.PlugInConfigurations
+            .FirstOrDefault(c => c.TypeId == typeof(ResetFeaturePlugIn).GUID);
+        if (resetConfiguration is null)
+        {
+            return;
+        }
+
+        resetConfiguration.IsActive = true;
+        var configuration = resetConfiguration.GetConfiguration<ResetConfiguration>(referenceHandler)
+                            ?? new ResetConfiguration();
+        configuration.ResetLimit = null;
+        configuration.RequiredLevel = 400;
+        configuration.PointsPerReset = 2000;
+        configuration.MultiplyPointsByResetCount = true;
+        resetConfiguration.SetConfiguration(configuration, referenceHandler);
+    }
 
     /// <inheritdoc />
     protected override void CreateGameClientDefinition()

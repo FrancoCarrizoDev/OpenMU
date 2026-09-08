@@ -64,9 +64,10 @@ public class ResetCharacterAction
 
         var resetProgression = ResetProgressionCalculator.Calculate(this.GetResetCount(), (int)this._player.Attributes[Stats.PointsPerReset], configuration);
 
-        if (this._player.Level < configuration.RequiredLevel)
+        var requiredLevel = Math.Min(configuration.RequiredLevel, this._player.GetMaximumCharacterLevel());
+        if (this._player.Level < requiredLevel)
         {
-            await this.ShowMessageAsync(nameof(PlayerMessage.RequiredLevelForReset), configuration.RequiredLevel).ConfigureAwait(false);
+            await this.ShowMessageAsync(nameof(PlayerMessage.RequiredLevelForReset), requiredLevel).ConfigureAwait(false);
             return;
         }
 

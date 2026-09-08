@@ -175,6 +175,7 @@ public abstract class DataInitializationBase : IDataInitializationPlugIn
             }
         });
 
+        this.ConfigurePlugInConfigurations(plugInManager, referenceHandler);
         this.AddAllUpdateEntries(plugInManager);
 
         await this.Context.SaveChangesAsync().ConfigureAwait(false);
@@ -197,6 +198,15 @@ public abstract class DataInitializationBase : IDataInitializationPlugIn
         {
             this._loggerFactory.CreateLogger(this.GetType()).LogWarning(ex, "Could not create custom default configuration for plugin type {plugInType}", plugInType);
         }
+    }
+
+    /// <summary>
+    /// Allows a data initialization to override feature activation and default configuration for its own version.
+    /// </summary>
+    /// <param name="plugInManager">The discovered plug-in manager.</param>
+    /// <param name="referenceHandler">The reference handler used for custom configurations.</param>
+    protected virtual void ConfigurePlugInConfigurations(PlugInManager plugInManager, ReferenceHandler referenceHandler)
+    {
     }
 
     private void AddAllUpdateEntries(PlugInManager plugInManager)

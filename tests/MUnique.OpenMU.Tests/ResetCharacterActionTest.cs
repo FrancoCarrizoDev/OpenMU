@@ -4,6 +4,7 @@
 
 namespace MUnique.OpenMU.Tests;
 
+using MUnique.OpenMU.AttributeSystem;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
@@ -104,6 +105,38 @@ public class ResetCharacterActionTest
         Assert.That((int)player.Attributes[Stats.Resets], Is.EqualTo(2));
         Assert.That(player.SelectedCharacter!.LevelUpPoints, Is.EqualTo(1_600));
         Assert.That(player.Money, Is.EqualTo(500));
+    }
+
+    /// <summary>
+    /// Verifies that a VIP character can reset at its lower VIP maximum level, even when the
+    /// configured required level is above it (season1-classic: level 400 for regular
+    /// characters, 390 for VIP).
+    /// </summary>
+    [Test]
+    public async Task VipCanResetAtVipMaximumLevelAsync()
+    {
+        var gameContext = PlayerTestHelper.CreateGameContext();
+        gameContext.Configuration.MaximumLevel = 400;
+        gameContext.Configuration.GlobalBaseAttributeValues.Add(new ConstValueAttribute(390, Stats.VipMaximumLevel));
+        var player = await PlayerTestHelper.CreatePlayerAsync(gameContext, isVip: true).ConfigureAwait(false);
+        player.Attributes![Stats.Level] = 390;
+        player.Money = 1_000;
+
+        var configuration = new ResetConfiguration
+        {
+            RequiredLevel = 400,
+            LevelAfterReset = 1,
+            RequiredMoney = 0,
+            ResetStats = false,
+            MoveHome = false,
+            LogOut = false,
+        };
+        player.GameContext.FeaturePlugIns.AddPlugIn(new ResetFeaturePlugIn { Configuration = configuration }, true);
+        var action = new ResetCharacterAction(player, await CreateResetNpcAsync(player).ConfigureAwait(false));
+
+        await action.ResetCharacterAsync().ConfigureAwait(false);
+
+        Assert.That((int)player.Attributes[Stats.Resets], Is.EqualTo(1));
     }
 
     /// <summary>
