@@ -6,7 +6,9 @@ namespace MUnique.OpenMU.Persistence.Initialization.VersionSeasonOne;
 
 using System.Reflection;
 using MUnique.OpenMU.AttributeSystem;
+using MUnique.OpenMU.DataModel.Attributes;
 using MUnique.OpenMU.DataModel.Configuration;
+using MUnique.OpenMU.DataModel.Configuration.ItemCrafting;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.Persistence.Initialization.Items;
@@ -22,14 +24,11 @@ using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Items;
 /// except it uses a
 /// <see cref="CharacterClassInitialization"/> without Master classes / Summoner / Rage Fighter.
 ///
-/// Harmony and sockets are NOT actually removable by just skipping their initializers or
-/// trimming <see cref="OptionTypes"/>: VersionSeasonSix.Items.Weapons and HarmonyOptions itself
-/// look up the Harmony option definitions/types with .Single()/.First(), so they hard-crash at
-/// startup if those aren't present (see docs/backlog.md). So, like season6, we keep the full
-/// option type catalog and still initialize Harmony - what's actually out of scope for Season 1
-/// (no Jewel of Harmony craftable, see CreateJewelMixes) is whether players can ever obtain it,
-/// not whether the definitions structurally exist. Truly stripping it out of weapons/armor would
-/// require forking VersionSeasonSix.Items.Weapons, tracked as a separate backlog item.
+/// Harmony definitions must still be initialized before the shared Season 6 weapon initializer;
+/// <see cref="VersionSeasonSix.Items.Weapons"/> resolves its Harmony definitions with
+/// <c>Single()</c>, and <see cref="HarmonyOptions"/> resolves its option type with <c>First()</c>.
+/// Season 1 therefore initializes those shared definitions and removes their item-facing paths
+/// after all shared item, drop and crafting initializers have run.
 /// </summary>
 public class GameConfigurationInitializer : GameConfigurationInitializerBase
 {
@@ -91,11 +90,9 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new ExcellentOptions(this.Context, this.GameConfiguration).Initialize();
 
         // VersionSeasonSix.Items.Weapons hard-requires the option definitions HarmonyOptions
-        // creates (it looks them up with .Single(), which throws if they don't exist) - see
-        // docs/backlog.md. So this has to run even though we don't want Harmony to be a thing
-        // in Season 1; it only gets attached to weapons as a result, not to armor (Armors.cs
-        // looks the option up defensively with FirstOrDefault). Fully removing Harmony from
-        // weapons needs its own Weapons.cs fork - tracked as a separate backlog item.
+        // creates (it looks them up with .Single(), which throws if they don't exist). Keep
+        // this initializer before Weapons, then detach the definitions from Season 1 items in
+        // DisableHarmonyAndSockets after all shared initializers have completed.
         new HarmonyOptions(this.Context, this.GameConfiguration).Initialize();
 
         new GuardianOptions(this.Context, this.GameConfiguration).Initialize();
@@ -123,6 +120,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         new BloodCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         new Events.ChaosCastleInitializer(this.Context, this.GameConfiguration).Initialize();
         this.ApplyItemDropRate();
+        this.DisableHarmonyAndSockets();
     }
 
     /// <summary>
@@ -170,6 +168,114 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         {
             dropGroup.Chance *= ItemDropRate;
         }
+    }
+
+    /// <summary>
+    /// Removes the Harmony and socket paths added by shared Season 6 initializers.
+    ///
+    /// The shared weapon initializer must see the Harmony definitions while it runs, but Season 1
+    /// must not expose those definitions through random options, drops or crafting. SocketSystem
+    /// is not initialized for Season 1; the extra cleanup also makes this boundary resilient if a
+    /// future shared initializer adds socket content before this method is called.
+    /// </summary>
+    private void DisableHarmonyAndSockets()
+    {
+        foreach (var item in this.GameConfiguration.Items)
+        {
+            item.MaximumSockets = 0;
+            foreach (var optionDefinition in item.PossibleItemOptions
+                         .Where(this.ContainsHarmonyOrSocketOption)
+                         .ToList())
+            {
+                item.PossibleItemOptions.Remove(optionDefinition);
+            }
+        }
+
+        foreach (var dropGroup in this.GetAllDropGroups())
+        {
+            foreach (var item in dropGroup.PossibleItems
+                         .Where(this.IsHarmonyOrSocketItem)
+                         .ToList())
+            {
+                dropGroup.PossibleItems.Remove(item);
+            }
+        }
+
+        foreach (var monster in this.GameConfiguration.Monsters)
+        {
+            foreach (var crafting in monster.ItemCraftings
+                         .Where(this.ContainsHarmonyOrSocketContent)
+                         .ToList())
+            {
+                monster.ItemCraftings.Remove(crafting);
+            }
+        }
+    }
+
+    private IEnumerable<DropItemGroup> GetAllDropGroups()
+    {
+        foreach (var dropGroup in this.GameConfiguration.DropItemGroups)
+        {
+            yield return dropGroup;
+        }
+
+        foreach (var map in this.GameConfiguration.Maps)
+        {
+            foreach (var dropGroup in map.DropItemGroups)
+            {
+                yield return dropGroup;
+            }
+        }
+
+        foreach (var monster in this.GameConfiguration.Monsters)
+        {
+            foreach (var dropGroup in monster.DropItemGroups)
+            {
+                yield return dropGroup;
+            }
+        }
+
+        foreach (var item in this.GameConfiguration.Items)
+        {
+            foreach (var dropGroup in item.DropItems)
+            {
+                yield return dropGroup;
+            }
+        }
+    }
+
+    private bool ContainsHarmonyOrSocketOption(ItemOptionDefinition definition)
+    {
+        return definition.PossibleOptions.Any(option => this.IsHarmonyOrSocketOption(option.OptionType));
+    }
+
+    private bool IsHarmonyOrSocketOption(ItemOptionType? optionType)
+    {
+        return optionType == ItemOptionTypes.HarmonyOption
+               || optionType == ItemOptionTypes.SocketOption
+               || optionType == ItemOptionTypes.SocketBonusOption;
+    }
+
+    private bool IsHarmonyOrSocketItem(ItemDefinition item)
+    {
+        return (item.Group == 14 && item.Number == 42) // Jewel of Harmony
+               || (item.Group == 12 && item.Number == 140) // Packed Jewel of Harmony
+               || (item.Group == 12 && item.Number is >= 60 and <= 75) // Seeds and spheres
+               || (item.Group == 12 && item.Number is >= 100 and <= 129); // Seed spheres
+    }
+
+    private bool ContainsHarmonyOrSocketContent(ItemCrafting crafting)
+    {
+        var settings = crafting.SimpleCraftingSettings;
+        if (settings is null)
+        {
+            return false;
+        }
+
+        return settings.RequiredItems.Any(requiredItem =>
+                   requiredItem.PossibleItems.Any(this.IsHarmonyOrSocketItem)
+                   || requiredItem.RequiredItemOptions.Any(this.IsHarmonyOrSocketOption))
+               || settings.ResultItems.Any(resultItem => resultItem.ItemDefinition is { } item && this.IsHarmonyOrSocketItem(item));
     }
 
     private void ExcludeItemsForUnavailableClassesFromMonsterDrops()

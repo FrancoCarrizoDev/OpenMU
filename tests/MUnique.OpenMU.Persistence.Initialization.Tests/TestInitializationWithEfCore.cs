@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.Persistence.Initialization.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.DataModel.Configuration;
+using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
@@ -112,6 +113,44 @@ internal class TestInitializationWithEfCore
     }
 
     /// <summary>
+    /// Tests that Season 1 does not expose Harmony or socket options through items, drops or crafting.
+    /// </summary>
+    [Test]
+    public async Task TestSeasonOneHarmonyAndSocketsAreUnavailableAsync()
+    {
+        var contextProvider = new InMemoryPersistenceContextProvider();
+        var dataInitialization = new VersionSeasonOne.DataInitialization(contextProvider, new NullLoggerFactory());
+        await dataInitialization.CreateInitialDataAsync(1, true).ConfigureAwait(false);
+
+        using var context = contextProvider.CreateNewConfigurationContext();
+        var gameConfiguration = (await context.GetAsync<GameConfiguration>().ConfigureAwait(false)).Single();
+        var dropGroups = gameConfiguration.DropItemGroups
+            .Concat(gameConfiguration.Maps.SelectMany(map => map.DropItemGroups))
+            .Concat(gameConfiguration.Monsters.SelectMany(monster => monster.DropItemGroups))
+            .Concat(gameConfiguration.Items.SelectMany(item => item.DropItems));
+        var craftings = gameConfiguration.Monsters.SelectMany(monster => monster.ItemCraftings).ToList();
+        var harmonyOrSocketCraftings = craftings.Where(crafting => crafting.SimpleCraftingSettings is { } settings
+            && (settings.RequiredItems.Any(requiredItem =>
+                    requiredItem.PossibleItems.Any(IsSeasonOneHarmonyOrSocketItem)
+                    || requiredItem.RequiredItemOptions.Any(IsSeasonOneHarmonyOrSocketOption))
+                || settings.ResultItems.Any(resultItem => resultItem.ItemDefinition is { } item && IsSeasonOneHarmonyOrSocketItem(item))));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                gameConfiguration.Items.SelectMany(item => item.PossibleItemOptions)
+                    .SelectMany(definition => definition.PossibleOptions)
+                    .Where(option => IsSeasonOneHarmonyOrSocketOption(option.OptionType)),
+                Is.Empty,
+                "Season 1 items must not expose Harmony or socket options.");
+            Assert.That(gameConfiguration.Items.Where(item => item.MaximumSockets > 0), Is.Empty);
+            Assert.That(dropGroups.SelectMany(group => group.PossibleItems).Where(IsSeasonOneHarmonyOrSocketItem), Is.Empty);
+            Assert.That(harmonyOrSocketCraftings, Is.Empty);
+            Assert.That(gameConfiguration.JewelMixes.Any(mix => mix.Number == 6), Is.False);
+        });
+    }
+
+    /// <summary>
     /// Tests the Season 1 QA account and compact monster spots.
     /// </summary>
     [Test]
@@ -153,6 +192,12 @@ internal class TestInitializationWithEfCore
             Assert.That(additionalGameMaster.Characters, Has.Count.EqualTo(4));
         }
 
+        // Each classic spot now spawns as 7 individual fixed-point areas (X1 == X2, Y1 == Y2)
+        // within the same original bounding box, instead of one area with a random position,
+        // so every monster of the spot always (re)spawns at the same coordinate. Origin points
+        // are matched exactly (rather than just checked against the bounding box) because some
+        // of these maps also have unrelated, pre-existing single-point monster placements of
+        // their own that happen to fall inside the same box.
         var expectedSpots = new[]
         {
             (MapNumber: (byte)0, MonsterNumber: (short)2, X1: (byte)150, X2: (byte)158, Y1: (byte)50, Y2: (byte)58),
@@ -279,6 +324,21 @@ internal class TestInitializationWithEfCore
                 Assert.Warn($"{ex.Message} Character: {character.Name}");
             }
         }
+    }
+
+    private static bool IsSeasonOneHarmonyOrSocketOption(ItemOptionType? optionType)
+    {
+        return optionType == ItemOptionTypes.HarmonyOption
+               || optionType == ItemOptionTypes.SocketOption
+               || optionType == ItemOptionTypes.SocketBonusOption;
+    }
+
+    private static bool IsSeasonOneHarmonyOrSocketItem(ItemDefinition item)
+    {
+        return (item.Group == 14 && item.Number == 42)
+               || (item.Group == 12 && item.Number == 140)
+               || (item.Group == 12 && item.Number is >= 60 and <= 75)
+               || (item.Group == 12 && item.Number is >= 100 and <= 129);
     }
 
     private async Task AssertIcarusFeatherAndCrestDropGroupsAsync(IPersistenceContextProvider contextProvider)
