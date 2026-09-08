@@ -215,6 +215,30 @@ public class SpeedHackAntiCheatTests
     }
 
     /// <summary>
+    /// Tests that drinking a healing potion and a mana potion back-to-back - the exact "recover"
+    /// pattern the MU Helper performs when both HP and mana drop low together - is not treated as a
+    /// cooldown burst just because both items share the same item group.
+    /// </summary>
+    [Test]
+    public async Task TestDifferentPotionTypesInQuickSuccessionDoNotRecordViolationAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var actionRatePlugIn = player.GameContext.FeaturePlugIns.GetPlugIn<ActionRateDetectPlugIn>()!;
+        actionRatePlugIn.Configuration!.PotionCooldownMs = 1_000;
+        var healthPotion = new Item { Definition = new ItemDefinition { Group = 14, Number = 3 }, Durability = 2 };
+        var manaPotion = new Item { Definition = new ItemDefinition { Group = 14, Number = 6 }, Durability = 2 };
+
+        var healthEventArgs = new ActionRateCheckEventArgs();
+        await actionRatePlugIn.ItemConsumptionCheatCheckAsync(player, healthPotion, healthEventArgs).ConfigureAwait(false);
+        var manaEventArgs = new ActionRateCheckEventArgs();
+        await actionRatePlugIn.ItemConsumptionCheatCheckAsync(player, manaPotion, manaEventArgs).ConfigureAwait(false);
+
+        Assert.That(healthEventArgs.IsActionRejected, Is.False);
+        Assert.That(manaEventArgs.IsActionRejected, Is.False, "a different potion type must not be blocked by another type's cooldown");
+        Assert.That(actionRatePlugIn.GetCooldownWarningCount(player), Is.EqualTo(0));
+    }
+
+    /// <summary>
     /// Tests that a sustained, nearly identical attack interval produces a warning but retains the
     /// default warning-only policy for the less certain uniformity signal.
     /// </summary>

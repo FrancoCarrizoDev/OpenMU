@@ -28,7 +28,11 @@ public class ActionRateDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguratio
 
     private enum ConsumptionCategory
     {
-        Potion,
+        Apple,
+        HealingPotion,
+        ManaPotion,
+        ShieldPotion,
+        ComplexPotion,
         Other,
     }
 
@@ -96,7 +100,7 @@ public class ActionRateDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguratio
         var state = this.GetState(player);
         var now = Environment.TickCount64;
         var category = GetConsumptionCategory(item);
-        var cooldownMs = category == ConsumptionCategory.Potion ? config.PotionCooldownMs : config.OtherConsumableCooldownMs;
+        var cooldownMs = category == ConsumptionCategory.Other ? config.OtherConsumableCooldownMs : config.PotionCooldownMs;
         bool shouldRecordCooldownViolation = false;
         bool isUniform = false;
 
@@ -169,15 +173,26 @@ public class ActionRateDetectPlugIn : IFeaturePlugIn, ISupportCustomConfiguratio
     private static ConsumptionCategory GetConsumptionCategory(Item item)
     {
         var definition = item.Definition;
-        if (definition?.Group == 14
-            && (definition.Number is >= 0 and <= 6 or >= 35 and <= 40))
+        if (definition?.Group != 14)
         {
-            // Group 14 contains the apple, health/mana, shield and complex potions. Keeping their
-            // shared category preserves the established potion behavior when players alternate them.
-            return ConsumptionCategory.Potion;
+            return ConsumptionCategory.Other;
         }
 
-        return ConsumptionCategory.Other;
+        // Each restorative potion type recovers a different resource (HP, mana, shield, or a
+        // combination of all three) and has always been usable independently of the others: a
+        // player - or the MU Helper automating the same recovery loop - routinely drinks an HP
+        // potion and a mana potion within the same instant when both drop low together. Sharing
+        // one cooldown bucket across every type in this group treated that legitimate pairing as
+        // a burst and banned the account after a few such warnings.
+        return definition.Number switch
+        {
+            0 => ConsumptionCategory.Apple,
+            >= 1 and <= 3 => ConsumptionCategory.HealingPotion,
+            >= 4 and <= 6 => ConsumptionCategory.ManaPotion,
+            >= 35 and <= 37 => ConsumptionCategory.ShieldPotion,
+            >= 38 and <= 40 => ConsumptionCategory.ComplexPotion,
+            _ => ConsumptionCategory.Other,
+        };
     }
 
     private static bool TrackInterval(Queue<long> intervals, ref long lastActionTimeMs, long now, ActionRateDetectConfiguration config)
