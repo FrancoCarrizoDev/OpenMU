@@ -114,6 +114,50 @@ public class ExperienceRateSplitTest
     }
 
     /// <summary>
+    /// Verifies that nearby party members receive an experience incentive and that a party with
+    /// different class families receives the additional diversity incentive.
+    /// </summary>
+    [Test]
+    public async ValueTask PartyDistributionRewardsMembersAndClassDiversityAsync()
+    {
+        var context = this.CreateGameServerContext(
+            normalExperienceRate: 1.0f,
+            globalMasterExperienceRate: 1.0f,
+            maximumLevel: 100,
+            maximumMasterLevel: 200);
+
+        var soloPlayer = await this.CreatePlayerAsync(context, level: 10, totalLevel: 10, isMasterClass: false).ConfigureAwait(false);
+        var killedObject = CreateKilledObject(level: 100);
+        var soloExperience = await soloPlayer.AddExpAfterKillAsync(killedObject.Object).ConfigureAwait(false);
+
+        var sameClassExperience = await this.GetPartyExperienceAsync(context, 0, 0, killedObject.Object).ConfigureAwait(false);
+        var diverseClassExperience = await this.GetPartyExperienceAsync(context, 0, 4, killedObject.Object).ConfigureAwait(false);
+
+        Assert.That(sameClassExperience, Is.GreaterThan(soloExperience));
+        Assert.That(diverseClassExperience, Is.GreaterThan(sameClassExperience));
+    }
+
+    /// <summary>
+    /// Verifies that an evolution is treated as the same class family, instead of granting the
+    /// diversity bonus merely for advancing a character.
+    /// </summary>
+    [Test]
+    public async ValueTask PartyDistributionTreatsClassEvolutionsAsTheSameFamilyAsync()
+    {
+        var context = this.CreateGameServerContext(
+            normalExperienceRate: 1.0f,
+            globalMasterExperienceRate: 1.0f,
+            maximumLevel: 100,
+            maximumMasterLevel: 200);
+        var killedObject = CreateKilledObject(level: 100);
+
+        var twoWizardsExperience = await this.GetPartyExperienceAsync(context, 0, 0, killedObject.Object).ConfigureAwait(false);
+        var wizardAndSoulMasterExperience = await this.GetPartyExperienceAsync(context, 0, 2, killedObject.Object).ConfigureAwait(false);
+
+        Assert.That(wizardAndSoulMasterExperience, Is.EqualTo(twoWizardsExperience));
+    }
+
+    /// <summary>
     /// Verifies that a party member at the maximum level without the master quest still gets a
     /// money basis. It gains no experience, but the money drop is derived from that value, and a
     /// solo kill returns it too - so returning zero would leave it without any zen in a party.
@@ -309,6 +353,22 @@ public class ExperienceRateSplitTest
         player.SelectedCharacter.Experience = 0;
         player.SelectedCharacter.MasterExperience = 0;
         return player;
+    }
+
+    private async ValueTask<int> GetPartyExperienceAsync(IGameContext context, byte firstClassNumber, byte secondClassNumber, IAttackable killedObject)
+    {
+        var firstPlayer = await this.CreatePlayerAsync(context, level: 10, totalLevel: 10, isMasterClass: false).ConfigureAwait(false);
+        var secondPlayer = await this.CreatePlayerAsync(context, level: 10, totalLevel: 10, isMasterClass: false).ConfigureAwait(false);
+        firstPlayer.SelectedCharacter!.CharacterClass!.Number = firstClassNumber;
+        secondPlayer.SelectedCharacter!.CharacterClass!.Number = secondClassNumber;
+
+        var party = new Party(new PartyManager(5, new NullLogger<Party>()), 5, new NullLogger<Party>());
+        await party.AddAsync(firstPlayer).ConfigureAwait(false);
+        await party.AddAsync(secondPlayer).ConfigureAwait(false);
+        await firstPlayer.AddObserverAsync(secondPlayer).ConfigureAwait(false);
+
+        var shares = await party.DistributeExperienceAfterKillAsync(killedObject, firstPlayer).ConfigureAwait(false);
+        return shares.Single(share => share.Player == firstPlayer).Experience;
     }
 
     private IGameServerContext CreateGameServerContext(float normalExperienceRate, float globalMasterExperienceRate, short maximumLevel, short maximumMasterLevel, bool preventExperienceOverflow = false)

@@ -18,6 +18,10 @@ using Nito.AsyncEx;
 /// </summary>
 public sealed class Party : AsyncDisposable
 {
+    // These bonuses apply only to members eligible for the current kill, not everyone listed in the party.
+    private const double PartyMemberExperienceBonus = 0.10;
+    private const double DiverseClassExperienceBonus = 0.10;
+
     private static readonly Meter Meter = new(MeterName);
     private static readonly Counter<int> PartyCount = Meter.CreateCounter<int>("PartyCount");
 
@@ -342,9 +346,17 @@ public sealed class Party : AsyncDisposable
         var averageLevel = totalLevel / memberCount;
         var baseExperience = killed.CalculateBaseExperience(averageLevel);
 
-        var partyBonusMultiplier = Math.Pow(1.05, memberCount - 1);
+        // Party members already need to be close enough to share the kill. Reward each additional
+        // eligible member and add another reward for every distinct class family represented. The
+        // latter deliberately groups a class with its evolutions (for example DW/Soul Master).
+        var partyBonusMultiplier = 1 + ((memberCount - 1) * PartyMemberExperienceBonus);
+        var distinctClassFamilyCount = recipients
+            .Select(GetCharacterClassFamily)
+            .Distinct()
+            .Count();
+        var diverseClassBonusMultiplier = 1 + ((distinctClassFamilyCount - 1) * DiverseClassExperienceBonus);
         var mapExperienceMultiplier = killed.CurrentMap?.Definition.ExpMultiplier ?? 1;
-        var totalBaseExperience = baseExperience * memberCount * partyBonusMultiplier * mapExperienceMultiplier;
+        var totalBaseExperience = baseExperience * memberCount * partyBonusMultiplier * diverseClassBonusMultiplier * mapExperienceMultiplier;
 
         var attributes = recipients[0].Attributes!;
         var randomMinMultiplier = attributes[Stats.RandomExperienceMinMultiplier];
@@ -352,6 +364,13 @@ public sealed class Party : AsyncDisposable
         var totalExperience = CalculateTotalExperience(totalBaseExperience, randomMinMultiplier, randomMaxMultiplier);
 
         return (float)totalExperience / totalLevel;
+    }
+
+    private static int GetCharacterClassFamily(Player player)
+    {
+        // MU encodes a class family in the upper bits of its class number: 0/2/3 are wizard,
+        // 4/6/7 knight, 8/10/11 elf, etc. This remains correct for base, second and master classes.
+        return player.SelectedCharacter?.CharacterClass?.Number >> 2 ?? int.MinValue;
     }
 
     private static int CalculateTotalExperience(double totalBaseExperience, float randomMinMultiplier, float randomMaxMultiplier)
