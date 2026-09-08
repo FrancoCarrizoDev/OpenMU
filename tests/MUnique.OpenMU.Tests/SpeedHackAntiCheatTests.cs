@@ -17,6 +17,7 @@ using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Offline;
+using MUnique.OpenMU.GameLogic.PlayerActions.ItemConsumeActions;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.GameLogic.Views.World;
 using MUnique.OpenMU.Pathfinding;
@@ -166,6 +167,76 @@ public class SpeedHackAntiCheatTests
         }
 
         Assert.That(detectedHack, Is.True);
+    }
+
+    /// <summary>
+    /// Tests that a repeated potion request is rejected before the handler can debit durability.
+    /// </summary>
+    [Test]
+    public async Task TestItemConsumptionCooldownRejectsRequestAndRecordsViolationAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var actionRatePlugIn = player.GameContext.FeaturePlugIns.GetPlugIn<ActionRateDetectPlugIn>()!;
+        actionRatePlugIn.Configuration!.PotionCooldownMs = 1_000;
+        actionRatePlugIn.Configuration.CooldownAutoBan = false;
+        actionRatePlugIn.Configuration.CooldownDisconnectOnViolation = false;
+        RegisterPotionConsumeHandler(player);
+
+        var potion = await AddHealthPotionAsync(player, durability: 2).ConfigureAwait(false);
+        var action = new ItemConsumeAction();
+
+        await action.HandleConsumeRequestAsync(player, potion.ItemSlot, potion.ItemSlot, FruitUsage.Undefined).ConfigureAwait(false);
+        await action.HandleConsumeRequestAsync(player, potion.ItemSlot, potion.ItemSlot, FruitUsage.Undefined).ConfigureAwait(false);
+
+        Assert.That(potion.Durability, Is.EqualTo(1), "the rejected request must not debit the item");
+        Assert.That(actionRatePlugIn.GetCooldownWarningCount(player), Is.EqualTo(1));
+    }
+
+    /// <summary>
+    /// Tests that legitimate consumption requests outside the server-side cooldown are not recorded.
+    /// </summary>
+    [Test]
+    public async Task TestItemConsumptionCooldownAllowsSpacedRequestsAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var actionRatePlugIn = player.GameContext.FeaturePlugIns.GetPlugIn<ActionRateDetectPlugIn>()!;
+        actionRatePlugIn.Configuration!.PotionCooldownMs = 20;
+        RegisterPotionConsumeHandler(player);
+
+        var potion = await AddHealthPotionAsync(player, durability: 3).ConfigureAwait(false);
+        var action = new ItemConsumeAction();
+
+        await action.HandleConsumeRequestAsync(player, potion.ItemSlot, potion.ItemSlot, FruitUsage.Undefined).ConfigureAwait(false);
+        await Task.Delay(50).ConfigureAwait(false);
+        await action.HandleConsumeRequestAsync(player, potion.ItemSlot, potion.ItemSlot, FruitUsage.Undefined).ConfigureAwait(false);
+
+        Assert.That(potion.Durability, Is.EqualTo(1));
+        Assert.That(actionRatePlugIn.GetCooldownWarningCount(player), Is.EqualTo(0));
+    }
+
+    /// <summary>
+    /// Tests that a sustained, nearly identical attack interval produces a warning but retains the
+    /// default warning-only policy for the less certain uniformity signal.
+    /// </summary>
+    [Test]
+    public async Task TestUniformAttackTimingRaisesWarningWithoutBanAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var actionRatePlugIn = player.GameContext.FeaturePlugIns.GetPlugIn<ActionRateDetectPlugIn>()!;
+        actionRatePlugIn.Configuration!.UniformityWindowSize = 4;
+        actionRatePlugIn.Configuration.UniformityMinimumSamples = 4;
+        actionRatePlugIn.Configuration.UniformityCoefficientOfVariationThreshold = 0.20;
+
+        for (int i = 0; i < 5; i++)
+        {
+            await Task.Delay(100).ConfigureAwait(false);
+            var eventArgs = new SpeedHackCheckEventArgs();
+            await actionRatePlugIn.AttackCheatCheckAsync(player, eventArgs).ConfigureAwait(false);
+            Assert.That(eventArgs.IsCheatDetected, Is.False, "uniformity alone must not reject an attack");
+        }
+
+        Assert.That(actionRatePlugIn.GetUniformityWarningCount(player), Is.EqualTo(1));
+        Assert.That(player.Account?.State, Is.EqualTo(AccountState.Normal));
     }
 
     /// <summary>
@@ -444,6 +515,72 @@ public class SpeedHackAntiCheatTests
         Assert.That(offlinePlayer.Account?.State, Is.EqualTo(AccountState.Normal));
     }
 
+    /// <summary>
+    /// Tests that the server-controlled offline player is excluded from both new action-rate checks.
+    /// </summary>
+    [Test]
+    public async Task TestOfflinePlayerIsNotCheckedByActionRateAntiCheatAsync()
+    {
+        var player = await CreatePlayerWithSpeedAttributesAsync().ConfigureAwait(false);
+        var offlinePlayer = await CreateOfflinePlayerAsync(player).ConfigureAwait(false);
+        var actionRatePlugIn = player.GameContext.FeaturePlugIns.GetPlugIn<ActionRateDetectPlugIn>()!;
+        actionRatePlugIn.Configuration!.PotionCooldownMs = 1_000;
+        actionRatePlugIn.Configuration.UniformityWindowSize = 4;
+        actionRatePlugIn.Configuration.UniformityMinimumSamples = 4;
+        actionRatePlugIn.Configuration.UniformityCoefficientOfVariationThreshold = 1.0;
+        var potion = new Item
+        {
+            Definition = new ItemDefinition { Group = 14, Number = 3 },
+            Durability = 2,
+        };
+
+        for (int i = 0; i < 5; i++)
+        {
+            var itemEventArgs = new ActionRateCheckEventArgs();
+            await actionRatePlugIn.ItemConsumptionCheatCheckAsync(offlinePlayer, potion, itemEventArgs).ConfigureAwait(false);
+            Assert.That(itemEventArgs.IsActionRejected, Is.False);
+
+            var attackEventArgs = new SpeedHackCheckEventArgs();
+            await actionRatePlugIn.AttackCheatCheckAsync(offlinePlayer, attackEventArgs).ConfigureAwait(false);
+            Assert.That(attackEventArgs.IsCheatDetected, Is.False);
+        }
+
+        Assert.That(actionRatePlugIn.GetCooldownWarningCount(offlinePlayer), Is.EqualTo(0));
+        Assert.That(actionRatePlugIn.GetUniformityWarningCount(offlinePlayer), Is.EqualTo(0));
+        Assert.That(offlinePlayer.Account?.State, Is.EqualTo(AccountState.Normal));
+    }
+
+    private static void RegisterPotionConsumeHandler(Player player)
+    {
+        var handler = new LargeHealthPotionConsumeHandlerPlugIn
+        {
+            Configuration = new RecoverConsumeHandlerConfiguration
+            {
+                CooldownTime = TimeSpan.Zero,
+                RecoverDelayReductionByPotionLevel = 1.0,
+            },
+        };
+        player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<IItemConsumeHandlerPlugIn>(handler);
+    }
+
+    private static async ValueTask<Item> AddHealthPotionAsync(Player player, byte durability)
+    {
+        var potion = new Item
+        {
+            ItemSlot = 12,
+            Definition = new ItemDefinition
+            {
+                Group = 14,
+                Number = 3,
+                Width = 1,
+                Height = 1,
+            },
+            Durability = durability,
+        };
+        Assert.That(await player.Inventory!.AddItemAsync(potion.ItemSlot, potion).ConfigureAwait(false), Is.True);
+        return potion;
+    }
+
     private static async ValueTask<OfflinePlayer> CreateOfflinePlayerAsync(Player regularPlayer)
     {
         var offlinePlayer = new OfflinePlayer(regularPlayer.GameContext) { Account = regularPlayer.Account };
@@ -542,9 +679,14 @@ public class SpeedHackAntiCheatTests
 
         var player = new TestPlayer(gameContext) { Account = account };
         var speedHackDetectPlugIn = new SpeedHackDetectPlugIn { Configuration = new SpeedHackDetectConfiguration() };
+        var actionRateDetectPlugIn = new ActionRateDetectPlugIn { Configuration = new ActionRateDetectConfiguration() };
         player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<IFeaturePlugIn>(speedHackDetectPlugIn);
         player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<ISpeedHackCheatCheckPlugIn>(speedHackDetectPlugIn);
+        player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<IFeaturePlugIn>(actionRateDetectPlugIn);
+        player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<ISpeedHackCheatCheckPlugIn>(actionRateDetectPlugIn);
+        player.GameContext.PlugInManager.RegisterPlugInAtPlugInPoint<IActionRateCheatCheckPlugIn>(actionRateDetectPlugIn);
         player.GameContext.FeaturePlugIns.AddPlugIn(speedHackDetectPlugIn, true);
+        player.GameContext.FeaturePlugIns.AddPlugIn(actionRateDetectPlugIn, true);
         await player.PlayerState.TryAdvanceToAsync(PlayerState.LoginScreen).ConfigureAwait(false);
         await player.PlayerState.TryAdvanceToAsync(PlayerState.Authenticated).ConfigureAwait(false);
         await player.PlayerState.TryAdvanceToAsync(PlayerState.CharacterSelection).ConfigureAwait(false);

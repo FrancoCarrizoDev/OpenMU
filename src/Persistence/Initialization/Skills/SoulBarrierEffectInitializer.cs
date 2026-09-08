@@ -32,7 +32,7 @@ public class SoulBarrierEffectInitializer : InitializerBase
         magicEffect.Number = (byte)MagicEffectNumber.SoulBarrier;
         magicEffect.Name = "Soul Barrier";
         magicEffect.InformObservers = true;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 60;

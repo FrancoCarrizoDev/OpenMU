@@ -33,7 +33,7 @@ public class CriticalDamageIncreaseEffectInitializer : InitializerBase
         magicEffect.Name = "Critical Damage Increase Skill Effect";
         magicEffect.InformObservers = true;
         magicEffect.SubType = 17;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 60f;

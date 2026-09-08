@@ -33,7 +33,7 @@ public class WizardryEnhanceEffectInitializer : InitializerBase
         magicEffect.Name = "Wiz Enhance Skill Effect";
         magicEffect.InformObservers = true;
         magicEffect.SubType = 33;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 1800f; // 30 minutes

@@ -33,7 +33,7 @@ public class LifeSwellEffectInitializer : InitializerBase
         magicEffect.Name = "Life Swell Skill Effect";
         magicEffect.InformObservers = true;
         magicEffect.SubType = 4;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 60f;

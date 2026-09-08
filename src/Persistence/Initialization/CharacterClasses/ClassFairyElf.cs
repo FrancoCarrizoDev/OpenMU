@@ -85,6 +85,17 @@ internal partial class CharacterClassInitialization
         result.AttributeCombinations.Add(this.CreateAttributeRelationship(Stats.MeleeAttackMode, 0, Stats.ArcheryAttackMode, InputOperator.ExponentiateByAttribute));
         result.AttributeCombinations.Add(this.CreateAttributeRelationship(Stats.SkillExtraManaCost, 0, Stats.AmmunitionConsumptionRate, InputOperator.ExponentiateByAttribute, AggregateType.Multiplicate));
 
+        // Elf characters do not consume bow/crossbow ammunition. Multiplying the
+        // AmmunitionConsumptionRate by 0 unconditionally zeroes it out for the elf class, so
+        // AttackableExtensions.ApplyAmmunitionConsumption short-circuits regardless of whether
+        // a bow/crossbow is equipped. This mirrors the Infinity Arrow effect (see
+        // InfiniteArrowEffectInitializer) but is always active for elf classes instead of being
+        // a timed buff, and therefore also covers the "shoot without ammo equipped" edge case.
+        // We use AmmunitionAmount as the source attribute (it is always >= 0, including 0 when no
+        // ammo is equipped) so the relationship evaluates to AmmunitionAmount * 0 = 0 without
+        // creating a feedback loop on AmmunitionConsumptionRate itself.
+        result.AttributeCombinations.Add(this.CreateAttributeRelationship(Stats.AmmunitionConsumptionRate, 0f, Stats.AmmunitionAmount, InputOperator.Multiply, AggregateType.Multiplicate));
+
         result.AttributeCombinations.Add(this.CreateConditionalRelationship(Stats.MinimumPhysBaseDmg, Stats.ArcheryAttackMode, Stats.ArcheryMinDmg));
         result.AttributeCombinations.Add(this.CreateConditionalRelationship(Stats.MaximumPhysBaseDmg, Stats.ArcheryAttackMode, Stats.ArcheryMaxDmg));
         result.AttributeCombinations.Add(this.CreateConditionalRelationship(ammunitionDmgIncrease, Stats.ArcheryAttackMode, Stats.AmmunitionDamageBonus));

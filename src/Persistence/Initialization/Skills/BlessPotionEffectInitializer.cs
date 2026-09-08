@@ -33,7 +33,7 @@ public class BlessPotionEffectInitializer : InitializerBase
         magicEffect.SubType = 255 - (byte)MagicEffectNumber.PotionOfBless;
         magicEffect.Name = "Potion of Bless Effect";
         magicEffect.InformObservers = false;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 120;

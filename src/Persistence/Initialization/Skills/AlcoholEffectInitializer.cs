@@ -32,7 +32,7 @@ public class AlcoholEffectInitializer : InitializerBase
         magicEffect.SubType = 54;
         magicEffect.Name = "Alcohol Effect";
         magicEffect.InformObservers = false;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = false;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 80f;

@@ -51,6 +51,19 @@ public class ItemConsumeAction
             return;
         }
 
+        if (player.GameContext.PlugInManager.GetPlugInPoint<IActionRateCheatCheckPlugIn>() is { } actionRateCheck)
+        {
+            var eventArgs = new ActionRateCheckEventArgs();
+            await actionRateCheck.ItemConsumptionCheatCheckAsync(player, item, eventArgs).ConfigureAwait(false);
+            if (eventArgs.IsActionRejected)
+            {
+                // The anti-cheat check happens before the handler so a rejected packet cannot
+                // debit durability or apply a consumable's effect.
+                await player.InvokeViewPlugInAsync<IRequestedItemConsumptionFailedPlugIn>(p => p.RequestedItemConsumptionFailedAsync()).ConfigureAwait(false);
+                return;
+            }
+        }
+
         var targetItem = player.Inventory!.GetItem(inventoryTargetSlot);
 
         if (player.GameContext.PlugInManager.GetPlugInPoint<IItemConsumingPlugIn>() is { } plugInPoint)

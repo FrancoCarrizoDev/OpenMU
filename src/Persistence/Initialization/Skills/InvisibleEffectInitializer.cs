@@ -33,7 +33,7 @@ public class InvisibleEffectInitializer : InitializerBase
         magicEffect.Number = (byte)MagicEffectNumber.Transparency;
         magicEffect.Name = "Invisible";
         magicEffect.InformObservers = false;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = false;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = (float)TimeSpan.FromDays(1).TotalSeconds;

@@ -32,7 +32,7 @@ public class SoulPotionEffectInitializer : InitializerBase
         magicEffect.SubType = 255 - (byte)MagicEffectNumber.PotionOfSoul;
         magicEffect.Name = "Potion of Soul Effect";
         magicEffect.InformObservers = false;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 60;

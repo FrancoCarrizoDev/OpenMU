@@ -32,7 +32,7 @@ public class GreaterDamageEffectInitializer : InitializerBase
         magicEffect.Number = (short)MagicEffectNumber.GreaterDamage;
         magicEffect.Name = "Greater Damage Buff Skill Effect";
         magicEffect.InformObservers = true;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 60; // 60 Seconds
