@@ -29,6 +29,7 @@ public class NpcBuffRequestAction
         var anyTooLow = false;
         var anyTooStrong = false;
         var anyValidEffect = false;
+        var persistentStateChanged = false;
         foreach (var buff in buffs)
         {
             if (buff.MagicEffectDefinition is not { } effectDef)
@@ -50,25 +51,56 @@ public class NpcBuffRequestAction
                 continue;
             }
 
+            var isElfSoldierBuff = ElfSoldierBuff.IsElfSoldierEffect(player, effectDef);
+            if (isElfSoldierBuff && !ElfSoldierBuff.IsEligible(player))
+            {
+                anyTooStrong = true;
+                continue;
+            }
+
             var duration = TimeSpan.FromSeconds(effectDef.Duration?.ConstantValue?.Value ?? 0);
-            if (duration.TotalSeconds == 0)
+            if (duration <= TimeSpan.Zero)
             {
                 continue;
             }
 
-            var boosts = effectDef.PowerUpDefinitions
-                .Where(def => def.Boost is not null && def.TargetAttribute is not null)
-                .Select(def => new MagicEffect.ElementWithTarget(player.Attributes!.CreateElement(def), def.TargetAttribute!))
-                .ToArray();
+            if (isElfSoldierBuff)
+            {
+                var now = DateTime.UtcNow;
+                var expiration = player.SelectedCharacter?.ElfSoldierBuffExpirationUtc;
+                if (expiration > now)
+                {
+                    duration = expiration.Value - now;
+                    if (player.MagicEffectList.ActiveEffects.ContainsKey(effectDef.Number))
+                    {
+                        anyApplied = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    expiration = now + duration;
+                    if (player.SelectedCharacter is { } selectedCharacter)
+                    {
+                        selectedCharacter.ElfSoldierBuffExpirationUtc = expiration;
+                        persistentStateChanged = true;
+                    }
+                }
+            }
 
-            if (boosts.Length == 0)
+            var effect = ElfSoldierBuff.CreateEffect(player, effectDef, duration);
+            if (effect is null)
             {
                 continue;
             }
 
-            var effect = new MagicEffect(duration, effectDef, boosts);
             await player.MagicEffectList.AddEffectAsync(effect).ConfigureAwait(false);
             anyApplied = true;
+        }
+
+        if (persistentStateChanged)
+        {
+            await player.SaveProgressAsync().ConfigureAwait(false);
         }
 
         if (anyApplied)

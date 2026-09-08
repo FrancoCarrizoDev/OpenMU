@@ -149,6 +149,11 @@ public class Character
     public int MasterLevelUpPoints { get; set; }
 
     /// <summary>
+    /// Gets or sets the UTC expiration timestamp of the persisted Elf Soldier buff.
+    /// </summary>
+    public DateTime? ElfSoldierBuffExpirationUtc { get; set; }
+
+    /// <summary>
     /// Gets or sets the current game map.
     /// </summary>
     [Required]

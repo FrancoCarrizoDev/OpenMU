@@ -5,15 +5,18 @@
 namespace MUnique.OpenMU.Persistence.Initialization.Tests;
 
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text.Json;
 using MUnique.OpenMU.DataModel;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
 using MUnique.OpenMU.GameLogic.Attributes;
+using MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.Persistence.EntityFramework;
 using MUnique.OpenMU.Persistence.Initialization.Updates;
 using MUnique.OpenMU.Persistence.InMemory;
+using MUnique.OpenMU.PlugIns;
 
 /// <summary>
 /// The main program class.
@@ -109,6 +112,45 @@ internal class TestInitializationWithEfCore
         {
             Assert.That(unavailableClassEquipment, Is.Empty);
             Assert.That(gameConfiguration.Items.Single(item => item.Name == "Small Healing Potion").DropsFromMonsters, Is.True);
+        });
+    }
+
+    /// <summary>
+    /// Tests the Season 1 reset activation and Elf Soldier policy.
+    /// </summary>
+    [Test]
+    public async Task TestSeasonOneResetAndElfSoldierPolicyAsync()
+    {
+        var contextProvider = new InMemoryPersistenceContextProvider();
+        var dataInitialization = new VersionSeasonOne.DataInitialization(contextProvider, new NullLoggerFactory());
+        await dataInitialization.CreateInitialDataAsync(1, true).ConfigureAwait(false);
+
+        using var context = contextProvider.CreateNewConfigurationContext();
+        var gameConfiguration = (await context.GetAsync<GameConfiguration>().ConfigureAwait(false)).Single();
+        var elfSoldier = gameConfiguration.Monsters.Single(monster => monster.Number == 257);
+        var elfSoldierEffect = gameConfiguration.MagicEffects.Single(effect => effect.Number == 3);
+        var lostTowerElfSoldierSpawns = gameConfiguration.Maps
+            .Where(map => map.Number == 4 && map.Discriminator == 0)
+            .SelectMany(map => map.MonsterSpawns)
+            .Where(spawn => spawn.MonsterDefinition?.Number == 257)
+            .ToList();
+        var resetPlugIn = gameConfiguration.PlugInConfigurations.Single(configuration => configuration.TypeId == typeof(ResetFeaturePlugIn).GUID);
+        using var resetJson = JsonDocument.Parse(resetPlugIn.CustomConfiguration!);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resetPlugIn.IsActive, Is.True);
+            Assert.That(resetJson.RootElement.GetProperty("ResetLimit").ValueKind, Is.EqualTo(JsonValueKind.Null));
+            Assert.That(resetJson.RootElement.GetProperty("RequiredLevel").GetInt32(), Is.EqualTo(400));
+            Assert.That(resetJson.RootElement.GetProperty("PointsPerReset").GetInt32(), Is.EqualTo(2000));
+            Assert.That(resetJson.RootElement.GetProperty("MultiplyPointsByResetCount").GetBoolean(), Is.True);
+            Assert.That(elfSoldierEffect.Duration?.ConstantValue?.Value, Is.EqualTo(24 * 60 * 60));
+            Assert.That(elfSoldierEffect.SendDuration, Is.True);
+            Assert.That(elfSoldier.Buffs.Single(buff => buff.MagicEffectDefinition?.Number == 3).MaximumLevel, Is.Null);
+            Assert.That(lostTowerElfSoldierSpawns, Has.Some.Matches<MonsterSpawnArea>(spawn => spawn.X1 == 202
+                                                                                                  && spawn.X2 == 202
+                                                                                                  && spawn.Y1 == 80
+                                                                                                  && spawn.Y2 == 80));
         });
     }
 

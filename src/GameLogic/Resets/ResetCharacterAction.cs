@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameLogic.Resets;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.PlayerActions;
+using MUnique.OpenMU.GameLogic.PlayerActions.Quests;
 using MUnique.OpenMU.GameLogic.Views.Character;
 using MUnique.OpenMU.GameLogic.Views.Login;
 using MUnique.OpenMU.GameLogic.Views.NPC;
@@ -85,6 +86,15 @@ public class ResetCharacterAction
         this._player.Attributes[Stats.Resets] = resetProgression.NextResetCount;
         this._player.Attributes[Stats.Level] = configuration.LevelAfterReset;
         this._player.SelectedCharacter.Experience = 0;
+        if (resetProgression.NextResetCount > ElfSoldierBuff.MaximumResetCount)
+        {
+            this._player.SelectedCharacter.ElfSoldierBuffExpirationUtc = null;
+            if (this._player.MagicEffectList.ActiveEffects.TryGetValue(ElfSoldierBuff.EffectNumber, out var elfSoldierEffect))
+            {
+                await elfSoldierEffect.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
         this.UpdateStats(configuration, resetProgression);
         if (configuration.MoveHome)
         {

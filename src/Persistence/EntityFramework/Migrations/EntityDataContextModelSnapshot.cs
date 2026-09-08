@@ -741,6 +741,9 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("ElfSoldierBuffExpirationUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("CurrentMapId")
                         .HasColumnType("uuid");
 

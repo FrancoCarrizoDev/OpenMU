@@ -1663,6 +1663,13 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
         await this._movement.StopWalkingAsync().ConfigureAwait(false);
         this.IsAlive = false;
         this._respawnAfterDeathCts = new CancellationTokenSource();
+        if (this.SelectedCharacter is { } selectedCharacter)
+        {
+            // StopByDeath removes the in-memory effect during respawn. Clear the persisted marker as well,
+            // otherwise a later reconnect could resurrect a buff which was cancelled by death.
+            selectedCharacter.ElfSoldierBuffExpirationUtc = null;
+        }
+
         await this.ForEachWorldObserverAsync<IObjectGotKilledPlugIn>(p => p.ObjectGotKilledAsync(this, killer), true).ConfigureAwait(false);
 
         if (killer is Player killerAfterKilled
@@ -1830,6 +1837,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
         this._storages.CreateForCharacter(selectedCharacter);
         this.SkillList = new SkillList(this);
         this.SetReclaimableAttributesBeforeEnterGame();
+        await PlayerActions.Quests.ElfSoldierBuff.RestoreAsync(this).ConfigureAwait(false);
         if (this.DetermineComboDefinition() is { } comboDefinition)
         {
             this._comboStateLazy = new Lazy<ComboStateMachine>(() => ComboStateMachine.Create(comboDefinition));

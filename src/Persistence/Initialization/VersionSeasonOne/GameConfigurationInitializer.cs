@@ -12,6 +12,7 @@ using MUnique.OpenMU.DataModel.Configuration.ItemCrafting;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.Persistence.Initialization.Items;
+using MUnique.OpenMU.Persistence.Initialization.Skills;
 using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix;
 using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Events;
 using MUnique.OpenMU.Persistence.Initialization.VersionSeasonSix.Items;
@@ -108,6 +109,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         this.ExcludeItemsForUnavailableClassesFromMonsterDrops();
         this.CreateJewelMixes();
         new NpcInitialization(this.Context, this.GameConfiguration).Initialize();
+        this.ConfigureElfSoldierBuff();
         new InvasionMobsInitialization(this.Context, this.GameConfiguration).Initialize();
         new GameMapsInitializer(this.Context, this.GameConfiguration).Initialize();
         this.AssignCharacterClassHomeMaps();
@@ -167,6 +169,24 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         foreach (var dropGroup in this.GameConfiguration.DropItemGroups.Where(group => group.Chance > 0 && group.Chance < 1))
         {
             dropGroup.Chance *= ItemDropRate;
+        }
+    }
+
+    private void ConfigureElfSoldierBuff()
+    {
+        var elfSoldier = this.GameConfiguration.Monsters.FirstOrDefault(m => m.Number == 257);
+        var effect = this.GameConfiguration.MagicEffects.FirstOrDefault(e => e.Number == (short)MagicEffectNumber.ElfSoldierBuff);
+        if (elfSoldier is null || effect is null)
+        {
+            return;
+        }
+
+        effect.Duration ??= this.Context.CreateNew<PowerUpDefinitionValue>();
+        effect.Duration.ConstantValue.Value = 24 * 60 * 60;
+        effect.SendDuration = true;
+        foreach (var buff in elfSoldier.Buffs.Where(b => b.MagicEffectDefinition?.Number == effect.Number))
+        {
+            buff.MaximumLevel = null;
         }
     }
 

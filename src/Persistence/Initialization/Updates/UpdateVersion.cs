@@ -526,9 +526,19 @@ public enum UpdateVersion
     FinishRageFighterMasterTree = 103,
 
     /// <summary>
+    /// The version of the <see cref="ConfigureSeasonOneElfSoldierBuffPlugIn"/>.
+    /// </summary>
+    ConfigureSeasonOneElfSoldierBuff = 104,
+
+    /// <summary>
     /// The version of the <see cref="EnableSeasonOneResetFeaturePlugIn"/>.
     /// </summary>
     EnableSeasonOneResetFeature = 105,
+
+    /// <summary>
+    /// The version of the <see cref="AddSeasonOneLostTowerElfSoldierPlugIn"/>.
+    /// </summary>
+    AddSeasonOneLostTowerElfSoldier = 106,
 
     /// <summary>
     /// The version of the <see cref="TuneSeasonOneResetPointsPlugIn"/>.
