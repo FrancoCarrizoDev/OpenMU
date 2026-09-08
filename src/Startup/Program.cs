@@ -28,6 +28,7 @@ using MUnique.OpenMU.Persistence;
 using MUnique.OpenMU.Persistence.EntityFramework;
 using MUnique.OpenMU.Persistence.EntityFramework.Json;
 using MUnique.OpenMU.Persistence.Initialization;
+using MUnique.OpenMU.Persistence.Initialization.Updates;
 using MUnique.OpenMU.Persistence.Initialization.Version075;
 using MUnique.OpenMU.Persistence.InMemory;
 using MUnique.OpenMU.PlugIns;
@@ -527,9 +528,95 @@ internal sealed class Program : IDisposable
         else
         {
             // everything is fine and ready
+            Console.WriteLine("The database schema is up to date.");
         }
 
+        await this.ApplyMandatoryConfigurationUpdatesAsync(version, contextProvider, loggerFactory).ConfigureAwait(false);
+
         return contextProvider;
+    }
+
+    private async Task ApplyMandatoryConfigurationUpdatesAsync(
+        string version,
+        IPersistenceContextProvider contextProvider,
+        ILoggerFactory loggerFactory)
+    {
+        if (!string.Equals(
+                version,
+                MUnique.OpenMU.Persistence.Initialization.VersionSeasonOne.DataInitialization.Id,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var serviceContainer = new ServiceContainer();
+        serviceContainer.AddService(typeof(ILoggerFactory), loggerFactory);
+        serviceContainer.AddService(typeof(IPersistenceContextProvider), contextProvider);
+
+        var dataSource = new GameConfigurationDataSource(
+            loggerFactory.CreateLogger<GameConfigurationDataSource>(),
+            contextProvider);
+        using var configurationContext = contextProvider.CreateNewConfigurationContext();
+        var configurationId = await configurationContext.GetDefaultGameConfigurationIdAsync(default).ConfigureAwait(false);
+        if (configurationId is null)
+        {
+            return;
+        }
+
+        await dataSource.GetOwnerAsync(configurationId.Value).ConfigureAwait(false);
+        var referenceHandler = new ByDataSourceReferenceHandler(dataSource);
+        var plugInManager = new PlugInManager(null, loggerFactory, serviceContainer, referenceHandler);
+        plugInManager.DiscoverAndRegisterPlugInsOf<IConfigurationUpdatePlugIn>();
+
+        var updateStrategyProvider = plugInManager.GetStrategyProvider<int, IConfigurationUpdatePlugIn>();
+        if (updateStrategyProvider is null)
+        {
+            return;
+        }
+
+        HashSet<int> installedVersions;
+        using (var context = contextProvider.CreateNewContext())
+        {
+            installedVersions = (await context.GetAsync<ConfigurationUpdate>().ConfigureAwait(false))
+                .Where(update => update.InstalledAt is not null)
+                .Select(update => update.Version)
+                .ToHashSet();
+        }
+        var seasonOneMandatoryUpdates = updateStrategyProvider.AvailableStrategies
+            .Where(update => update.DataInitializationKey == MUnique.OpenMU.Persistence.Initialization.VersionSeasonOne.DataInitialization.Id)
+            .Where(update => update.IsMandatory)
+            .OrderBy(update => update.Version)
+            .ToList();
+        var updates = seasonOneMandatoryUpdates
+            .Where(update => !installedVersions.Contains((int)update.Version))
+            .ToList();
+        if (updates.Count == 0)
+        {
+            Console.WriteLine($"Season 1 mandatory configuration updates already installed: {string.Join(", ", seasonOneMandatoryUpdates.Select(update => update.Version))}.");
+            return;
+        }
+
+        var progress = new Progress<(UpdateVersion CurrentUpdatingVersion, bool IsCompleted)>(status =>
+        {
+            if (status.IsCompleted && status.CurrentUpdatingVersion != UpdateVersion.Undefined)
+            {
+                this._logger.Information("Applied mandatory configuration update {UpdateVersion}.", status.CurrentUpdatingVersion);
+            }
+        });
+        foreach (var update in updates)
+        {
+            await new DataUpdateService(contextProvider, plugInManager)
+                .ApplyUpdatesAsync([update], progress)
+                .ConfigureAwait(false);
+        }
+
+        if (contextProvider is IMigratableDatabaseContextProvider migratableContextProvider)
+        {
+            migratableContextProvider.ResetCache();
+        }
+
+        this._logger.Information("Applied {UpdateCount} mandatory Season 1 configuration updates.", updates.Count);
+        Console.WriteLine($"Applied mandatory Season 1 configuration updates: {string.Join(", ", updates.Select(update => update.Version))}.");
     }
 
     private async Task ReadSystemConfigurationAsync(IPersistenceContextProvider persistenceContextProvider)
