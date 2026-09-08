@@ -29,7 +29,9 @@ public class DeActivateMagicEffectPlugIn : IActivateMagicEffectPlugIn, IDeactiva
         {
             { Stats.AttackSpeedAny, EffectItemConsumption.EffectType.AttackSpeed },
             { Stats.BaseDamageBonus, EffectItemConsumption.EffectType.Damage },
+            { Stats.GreaterDamageBonus, EffectItemConsumption.EffectType.Damage },
             { Stats.DefenseBase, EffectItemConsumption.EffectType.Defense },
+            { Stats.DefenseFinal, EffectItemConsumption.EffectType.Defense },
             { Stats.MaximumHealth, EffectItemConsumption.EffectType.MaximumHealth },
             { Stats.MaximumMana, EffectItemConsumption.EffectType.MaximumMana },
         });

@@ -70,6 +70,7 @@ public class AddElfSoldierBuffPlugIn : UpdatePlugInBase
             buffEffect.Number = (short)MagicEffectNumber.ElfSoldierBuff;
             buffEffect.Name = "Elf Soldier Buff";
             buffEffect.InformObservers = true;
+            buffEffect.SendDuration = true;
             buffEffect.StopByDeath = true;
 
             // Duration: 60 minutes

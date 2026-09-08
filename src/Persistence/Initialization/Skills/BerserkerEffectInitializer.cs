@@ -32,7 +32,7 @@ public class BerserkerEffectInitializer : InitializerBase
         magicEffect.Number = (short)MagicEffectNumber.Berserker;
         magicEffect.Name = "Berserker Buff Skill Effect";
         magicEffect.InformObservers = true;
-        magicEffect.SendDuration = false;
+        magicEffect.SendDuration = true;
         magicEffect.StopByDeath = true;
         magicEffect.Duration = this.Context.CreateNew<PowerUpDefinitionValue>();
         magicEffect.Duration.ConstantValue.Value = 30; // 30 Seconds
