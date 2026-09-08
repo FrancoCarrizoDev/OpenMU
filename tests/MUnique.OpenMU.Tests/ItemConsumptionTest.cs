@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.Tests;
 using Moq;
 using MUnique.OpenMU.AttributeSystem;
 using MUnique.OpenMU.DataModel;
+using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.DataModel.Configuration.Items;
 using MUnique.OpenMU.DataModel.Entities;
 using MUnique.OpenMU.GameLogic;
@@ -235,6 +236,32 @@ public class ItemConsumptionTest
         await player.Inventory!.AddItemAsync(ItemSlot, item).ConfigureAwait(false);
         var success = await consumeHandler.ConsumeItemAsync(player, item, null, FruitUsage.Undefined).ConfigureAwait(false);
         Assert.That(success, Is.False);
+    }
+
+    /// <summary>
+    /// Tests that a skill scroll bought while a Monster dialog (e.g. a merchant store window) is open
+    /// neither gets consumed/degraded nor grants the skill. Opening a Monster dialog advances the player
+    /// to <see cref="PlayerState.NpcDialogOpened"/>, which is not <see cref="PlayerState.EnteredWorld"/>,
+    /// so <see cref="BaseConsumeHandlerPlugIn.CheckPreconditions"/> must reject the request before the
+    /// item's durability is touched or the skill is learned.
+    /// </summary>
+    [Test]
+    public async ValueTask FailToLearnSkillWhileNpcDialogIsOpenAsync()
+    {
+        var consumeHandler = new LearnablesConsumeHandlerPlugIn();
+        var player = await this.GetPlayerAsync().ConfigureAwait(false);
+        var skill = new Skill { Number = 42, Name = "Test Skill" };
+        var item = this.GetItem();
+        item.Definition!.Skill = skill;
+        await player.Inventory!.AddItemAsync(ItemSlot, item).ConfigureAwait(false);
+
+        await player.PlayerState.TryAdvanceToAsync(PlayerState.NpcDialogOpened).ConfigureAwait(false);
+
+        var success = await consumeHandler.ConsumeItemAsync(player, item, null, FruitUsage.Undefined).ConfigureAwait(false);
+
+        Assert.That(success, Is.False);
+        Assert.That(item.Durability, Is.EqualTo(1), "The scroll must not be degraded when the consumption is rejected.");
+        Assert.That(player.SkillList!.ContainsSkill(skill.Number.ToUnsigned()), Is.False, "The skill must not be learned when the consumption is rejected.");
     }
 
     /// <summary>
