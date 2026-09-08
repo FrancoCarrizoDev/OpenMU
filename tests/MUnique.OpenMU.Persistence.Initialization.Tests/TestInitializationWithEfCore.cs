@@ -240,29 +240,36 @@ internal class TestInitializationWithEfCore
         // are matched exactly (rather than just checked against the bounding box) because some
         // of these maps also have unrelated, pre-existing single-point monster placements of
         // their own that happen to fall inside the same box.
-        var expectedSpots = new[]
+        // Each classic spot now spawns as 7 individual fixed-point areas (X1 == X2, Y1 == Y2)
+        // within the same original bounding box, instead of one area with a random position,
+        // so every monster of the spot always (re)spawns at the same coordinate. Origin points
+        // are matched exactly (rather than just checked against the bounding box) because some
+        // of these maps also have unrelated, pre-existing single-point monster placements of
+        // their own that happen to fall inside the same box.
+        var expectedSpots = new (byte MapNumber, short MonsterNumber, (byte X, byte Y)[] Points)[]
         {
-            (MapNumber: (byte)0, MonsterNumber: (short)2, X1: (byte)150, X2: (byte)158, Y1: (byte)50, Y2: (byte)58),
-            (MapNumber: (byte)3, MonsterNumber: (short)26, X1: (byte)175, X2: (byte)183, Y1: (byte)50, Y2: (byte)58),
-            (MapNumber: (byte)2, MonsterNumber: (short)21, X1: (byte)30, X2: (byte)38, Y1: (byte)20, Y2: (byte)28),
-            (MapNumber: (byte)1, MonsterNumber: (short)8, X1: (byte)40, X2: (byte)48, Y1: (byte)115, Y2: (byte)123),
-            (MapNumber: (byte)4, MonsterNumber: (short)40, X1: (byte)5, X2: (byte)13, Y1: (byte)95, Y2: (byte)103),
+            (0, 2, new (byte X, byte Y)[] { (150, 50), (154, 50), (158, 50), (150, 54), (154, 54), (158, 54), (150, 58) }),
+            (3, 26, new (byte X, byte Y)[] { (175, 50), (179, 50), (183, 50), (175, 54), (179, 54), (183, 54), (175, 58) }),
+            (2, 21, new (byte X, byte Y)[] { (30, 20), (34, 20), (38, 20), (30, 24), (34, 24), (38, 24), (30, 27) }),
+            (1, 8, new (byte X, byte Y)[] { (40, 115), (44, 115), (46, 115), (40, 119), (44, 119), (46, 117), (40, 123) }),
+            (4, 40, new (byte X, byte Y)[] { (5, 95), (9, 95), (13, 95), (5, 99), (9, 99), (13, 99), (5, 103) }),
         };
 
         foreach (var expectedSpot in expectedSpots)
         {
             var map = gameConfiguration.Maps.Single(m => m.Number == expectedSpot.MapNumber && m.Discriminator == 0);
-            Assert.That(
-                map.MonsterSpawns.Any(
-                    spawn => spawn.MonsterDefinition?.Number == expectedSpot.MonsterNumber
-                             && spawn.X1 == expectedSpot.X1
-                             && spawn.X2 == expectedSpot.X2
-                             && spawn.Y1 == expectedSpot.Y1
-                             && spawn.Y2 == expectedSpot.Y2
-                             && spawn.Quantity == 7
-                             && spawn.SpawnTrigger == SpawnTrigger.Automatic),
-                Is.True,
-                $"Missing Season 1 spot on map {expectedSpot.MapNumber} for monster {expectedSpot.MonsterNumber}.");
+            foreach (var point in expectedSpot.Points)
+            {
+                var matches = map.MonsterSpawns
+                    .Where(spawn => spawn.MonsterDefinition?.Number == expectedSpot.MonsterNumber
+                                    && spawn.SpawnTrigger == SpawnTrigger.Automatic
+                                    && spawn.IsPoint()
+                                    && spawn.X1 == point.X && spawn.Y1 == point.Y)
+                    .ToList();
+
+                Assert.That(matches, Has.Count.EqualTo(1), $"Expected exactly one fixed-point spawn at ({point.X}, {point.Y}) for monster {expectedSpot.MonsterNumber} on map {expectedSpot.MapNumber}.");
+                Assert.That(matches[0].Quantity, Is.EqualTo((short)1));
+            }
         }
     }
 
