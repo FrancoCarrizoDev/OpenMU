@@ -417,64 +417,28 @@ internal partial class NpcInitialization
         return storage;
     }
 
+    /// <summary>
+    /// Lumen the Barmaid is Lorencia's bar NPC. Her catalog mirrors Potion Girl Amy's (the
+    /// same potions, Town Portal Scrolls and the Chaos Castle entrance item, Armor of
+    /// Guardsman) plus the two combat pets, Guardian Angel and Imp. The Blood Castle
+    /// (Scroll of Archangel, Blood Bone) and Devil Square (Devil's Eye, Devil's Key) entrance
+    /// components she used to carry are intentionally gone: those events are meant to be
+    /// farmed, not shopped for, while Chaos Castle stays purchasable.
+    /// </summary>
     /// <inheritdoc />
     protected override ItemStorage CreateLumenTheBarmaidStore(short number)
     {
-        List<Item> itemList = new()
-        {
-            this.ItemHelper.CreateItem(0, 17, 13, 1, 1), // Blood Bone + 1
-            this.ItemHelper.CreateItem(1, 17, 13, 1, 2), // Blood Bone + 2
-            this.ItemHelper.CreateItem(2, 17, 13, 1, 3), // Blood Bone + 3
-            this.ItemHelper.CreateItem(3, 17, 13, 1, 4), // Blood Bone + 4
-            this.ItemHelper.CreateItem(4, 17, 13, 1, 5), // Blood Bone + 5
-            this.ItemHelper.CreateItem(5, 17, 13, 1, 6), // Blood Bone+  6
-            this.ItemHelper.CreateItem(6, 17, 13, 1, 7), // Blood Bone + 7
-            this.ItemHelper.CreateItem(7, 17, 13, 1, 8), // Blood Bone + 8
-            this.ItemHelper.CreateItem(16, 16, 13, 1, 1), // Scroll of Archangel + 1
-            this.ItemHelper.CreateItem(17, 16, 13, 1, 2), // Scroll of Archangel + 2
-            this.ItemHelper.CreateItem(18, 16, 13, 1, 3), // Scroll of Archangel + 3
-            this.ItemHelper.CreateItem(19, 16, 13, 1, 4), // Scroll of Archangel + 4
-            this.ItemHelper.CreateItem(20, 16, 13, 1, 5), // Scroll of Archangel + 5
-            this.ItemHelper.CreateItem(21, 16, 13, 1, 6), // Scroll of Archangel + 6
-            this.ItemHelper.CreateItem(22, 16, 13, 1, 7), // Scroll of Archangel + 7
-            this.ItemHelper.CreateItem(23, 16, 13, 1, 8), // Scroll of Archangel + 8
-
-            this.ItemHelper.CreateItem(32, 17, 14, 1, 1), // Devils Eye + 1
-            this.ItemHelper.CreateItem(33, 17, 14, 1, 2), // Devils Eye + 2
-            this.ItemHelper.CreateItem(34, 17, 14, 1, 3), // Devils Eye + 3
-            this.ItemHelper.CreateItem(35, 17, 14, 1, 4), // Devils Eye + 4
-            this.ItemHelper.CreateItem(36, 17, 14, 1, 5), // Devils Eye + 5
-            this.ItemHelper.CreateItem(37, 17, 14, 1, 6), // Devils Eye + 6
-            this.ItemHelper.CreateItem(38, 17, 14, 1, 7), // Devils Eye + 7
-            this.ItemHelper.CreateItem(39, 10, 14, 1, 0), // Town Portal Scroll
-            this.ItemHelper.CreateItem(40, 18, 14, 1, 1), // Devils key + 1
-            this.ItemHelper.CreateItem(41, 18, 14, 1, 2), // Devils key + 2
-            this.ItemHelper.CreateItem(42, 18, 14, 1, 3), // Devils key + 3
-            this.ItemHelper.CreateItem(43, 18, 14, 1, 4), // Devils key + 4
-            this.ItemHelper.CreateItem(44, 18, 14, 1, 5), // Devils key + 5
-            this.ItemHelper.CreateItem(45, 18, 14, 1, 6), // Devils key + 6
-            this.ItemHelper.CreateItem(46, 18, 14, 1, 7), // Devils key + 7
-
-            this.ItemHelper.CreateItem(48, 50, 13, 1, 1), // Illusion Sorcerer Covenant
-            this.ItemHelper.CreateItem(49, 50, 13, 1, 2), // Illusion Sorcerer Covenant
-            this.ItemHelper.CreateItem(50, 50, 13, 1, 3), // Illusion Sorcerer Covenant
-            this.ItemHelper.CreateItem(51, 50, 13, 1, 4), // Illusion Sorcerer Covenant
-            this.ItemHelper.CreateItem(52, 50, 13, 1, 5), // Illusion Sorcerer Covenant
-
-            this.ItemHelper.CreateItem(53, 49, 13, 1, 1), // Old Scroll
-            this.ItemHelper.CreateItem(54, 49, 13, 1, 2), // Old Scroll
-            this.ItemHelper.CreateItem(55, 49, 13, 1, 3), // Old Scroll
-            this.ItemHelper.CreateItem(61, 49, 13, 1, 4), // Old Scroll
-            this.ItemHelper.CreateItem(62, 49, 13, 1, 5), // Old Scroll
-            this.ItemHelper.CreatePotion(64, 9, 1, 0), // Ale
-            this.ItemHelper.CreateItem(65, 29, 13, 1, 0), // Armor of Guardsman
-        };
-
-        var storage = this.CreateMerchantStore(itemList);
-        storage.SetGuid(number);
+        var storage = this.CreatePotionGirlItemStorage(number);
+        storage.Items.Add(this.ItemHelper.CreateItem(34, 0, 13, 255, 0)); // Guardian Angel
+        storage.Items.Add(this.ItemHelper.CreateItem(35, 1, 13, 255, 0)); // Imp
         return storage;
     }
 
+    /// <summary>
+    /// Caren the Barmaid (Devias) keeps her own smaller catalog, minus the same Blood
+    /// Castle/Devil Square entrance components removed from Lumen; the Chaos Castle entrance
+    /// item (Armor of Guardsman) stays.
+    /// </summary>
     /// <inheritdoc />
     protected override ItemStorage CreateCarenTheBarmaidStore(short number)
     {
@@ -482,14 +446,6 @@ internal partial class NpcInitialization
         {
             this.ItemHelper.CreatePotion(0, 9, 1, 0), // Ale
             this.ItemHelper.CreateItem(1, 10, 14, 1, 0), // Town Portal Scroll
-            this.ItemHelper.CreateItem(2, 16, 13, 1, 1), // Scroll of Archangel + 1
-            this.ItemHelper.CreateItem(3, 16, 13, 1, 2), // Scroll of Archangel + 2
-            this.ItemHelper.CreateItem(4, 17, 13, 1, 1), // Blood Bone + 1
-            this.ItemHelper.CreateItem(5, 17, 13, 1, 2), // Blood Bone + 2
-            this.ItemHelper.CreateItem(6, 17, 14, 1, 1), // Devils Eye + 1
-            this.ItemHelper.CreateItem(7, 17, 14, 1, 2), // Devils Eye + 2
-            this.ItemHelper.CreateItem(14, 18, 14, 1, 1), // Devils key + 1
-            this.ItemHelper.CreateItem(15, 18, 14, 1, 2), // Devils key + 2
             this.ItemHelper.CreateItem(16, 29, 13, 1, 0), // Armor of Guardsman
         };
 
@@ -530,7 +486,6 @@ internal partial class NpcInitialization
             this.ItemHelper.CreateScroll(1, 10),  // Scroll of Power Wave
             this.ItemHelper.CreateScroll(2, 1),   // Scroll of Meteorite
             this.ItemHelper.CreateScroll(3, 6),   // Scroll of Ice
-            this.ItemHelper.CreateScroll(4, 20),  // Drain Life Parchment
         };
 
         var storage = this.CreateMerchantStore(itemList);
@@ -542,18 +497,6 @@ internal partial class NpcInitialization
     {
         List<Item> itemList = new()
         {
-            this.ItemHelper.CreateSetItem(0, 39, ItemGroups.Helm, null, 2, 1, true), // Violent Wind Helm +2+Luck+4
-            this.ItemHelper.CreateSetItem(2, 39, ItemGroups.Armor, null, 2, 1, true), // Violent Wind Armor +2+Luck+4
-            this.ItemHelper.CreateSetItem(4, 39, ItemGroups.Pants, null, 2, 1, true), // Violent Wind Pants +2+Luck+4
-            this.ItemHelper.CreateSetItem(6, 39, ItemGroups.Gloves, null, 2, 1, true), // Violent Wind Gloves +2+Luck+4
-            this.ItemHelper.CreateSetItem(16, 39, ItemGroups.Boots, null, 2, 1, true), // Violent Wind Boots +2+Luck+4
-
-            this.ItemHelper.CreateSetItem(18, 40, ItemGroups.Helm, null, 3, 1, true), // Red Wing Helm +3+Luck+4
-            this.ItemHelper.CreateSetItem(20, 40, ItemGroups.Armor, null, 3, 1, true), // Red Wing Armor +3+Luck+4
-            this.ItemHelper.CreateSetItem(22, 40, ItemGroups.Pants, null, 3, 1, true), // Red Wing Pants +3+Luck+4
-            this.ItemHelper.CreateSetItem(32, 40, ItemGroups.Gloves, null, 3, 1, true), // Red Wing Gloves +3+Luck+4
-            this.ItemHelper.CreateSetItem(34, 40, ItemGroups.Boots, null, 3, 1, true), // Red Wing Pants +3+Luck+4
-
             this.ItemHelper.CreateWeapon(36, ItemGroups.Axes, 0, 1, 1, true, false, null), // Small Axe +1+Luck+4
             this.ItemHelper.CreateWeapon(37, ItemGroups.Swords, 1, 0, 1, true, false, null), // Short Sword +0+Luck+4
             this.ItemHelper.CreateWeapon(38, ItemGroups.Axes, 1, 1, 1, true, false, null), // Hand Axe +1+Luck+4
@@ -562,10 +505,6 @@ internal partial class NpcInitialization
             this.ItemHelper.CreateWeapon(48, ItemGroups.Axes, 4, 1, 1, true, false, null), // Elven Axe +1+Luck+4
             this.ItemHelper.CreateWeapon(49, ItemGroups.Swords, 0, 1, 1, true, false, null), // Kris +1+Luck+4
             this.ItemHelper.CreateWeapon(50, ItemGroups.Staff, 0, 1, 1, true, false, null), // Skull Staff +1+Luck+4
-            this.ItemHelper.CreateWeapon(51, ItemGroups.Staff, 14, 1, 1, true, false, null), // Mystery Stick +1+Luck+4
-
-            this.ItemHelper.CreateWeapon(60, ItemGroups.Staff, 15, 2, 1, true, false, null), // Violent Wind Stick +2+Luck+4
-            this.ItemHelper.CreateWeapon(61, ItemGroups.Staff, 16, 3, 1, true, false, null), // Red Wing Stick +3+Luck+4
         };
 
         var storage = this.CreateMerchantStore(itemList);

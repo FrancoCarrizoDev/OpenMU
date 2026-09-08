@@ -109,6 +109,7 @@ public class GameConfigurationInitializer : GameConfigurationInitializerBase
         this.ExcludeItemsForUnavailableClassesFromMonsterDrops();
         this.CreateJewelMixes();
         new NpcInitialization(this.Context, this.GameConfiguration).Initialize();
+        new MerchantStores(this.Context, this.GameConfiguration).Initialize();
         this.ConfigureElfSoldierBuff();
         new InvasionMobsInitialization(this.Context, this.GameConfiguration).Initialize();
         new GameMapsInitializer(this.Context, this.GameConfiguration).Initialize();

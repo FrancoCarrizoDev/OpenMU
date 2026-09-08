@@ -81,7 +81,9 @@ public class GameMapsInitializer : VersionSeasonSix.GameMapsInitializer
     }
 
     /// <inheritdoc />
-    protected override IEnumerable<Type> MapInitializerTypes => base.MapInitializerTypes.Where(t => !ExcludedMapTypes.Contains(t));
+    protected override IEnumerable<Type> MapInitializerTypes => base.MapInitializerTypes
+        .Where(t => !ExcludedMapTypes.Contains(t))
+        .Select(t => t == typeof(Version095d.Maps.Tarkan) ? typeof(Tarkan) : t);
 
     /// <inheritdoc />
     public override void Initialize()
