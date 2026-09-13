@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameServer;
 using Microsoft.Extensions.Logging;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.Network;
 
 /// <summary>
 /// A game map initializer which takes aspects of the <see cref="GameServer"/> into account.
@@ -35,6 +36,9 @@ internal class GameServerMapInitializer : MapInitializer
     /// <returns>The game map definition.</returns>
     protected override GameMapDefinition? GetMapDefinition(ushort mapNumber)
     {
-        return this._serverDefinition.ServerConfiguration?.Maps.FirstOrDefault(map => map.Number == mapNumber);
+        var number = mapNumber.GetLowByte();
+        var discriminator = mapNumber.GetHighByte();
+        return this._serverDefinition.ServerConfiguration?.Maps.FirstOrDefault(map =>
+            map.Number == number && map.Discriminator == discriminator);
     }
 }

@@ -7,6 +7,7 @@ namespace MUnique.OpenMU.GameLogic;
 using System.Collections.Concurrent;
 using MUnique.OpenMU.GameLogic.NPC;
 using MUnique.OpenMU.GameLogic.Views.NPC;
+using MUnique.OpenMU.Network;
 using MUnique.OpenMU.Pathfinding;
 using MUnique.OpenMU.PlugIns;
 
@@ -181,48 +182,48 @@ public class MapInitializer : IMapInitializer
         _ = this.PathFinderPool ?? throw new InvalidOperationException("PathFinderPool must be set first");
 
         var monsterDef = spawnArea.MonsterDefinition!;
-        NonPlayerCharacter npc;
-
-        var intelligence = this.TryCreateConfiguredNpcIntelligence(monsterDef, createdMap);
-
-        if (monsterDef.ObjectKind == NpcObjectKind.Monster)
-        {
-            this._logger.LogDebug("Creating monster {spawn}", spawnArea);
-            npc = new Monster(spawnArea, monsterDef, createdMap, dropGenerator ?? this._dropGenerator, intelligence ?? new BasicMonsterIntelligence(), this.PlugInManager, this.PathFinderPool, eventStateProvider);
-        }
-        else if (monsterDef.ObjectKind == NpcObjectKind.Guard)
-        {
-            this._logger.LogDebug("Creating guard {spawn}", spawnArea);
-            npc = new Monster(spawnArea, monsterDef, createdMap, NullDropGenerator.Instance, intelligence ?? new GuardIntelligence(), this.PlugInManager, this.PathFinderPool, eventStateProvider);
-        }
-        else if (monsterDef.ObjectKind == NpcObjectKind.Trap)
-        {
-            this._logger.LogDebug("Creating trap {spawn}", spawnArea);
-            npc = new Trap(spawnArea, monsterDef, createdMap, intelligence ?? new RandomAttackInRangeTrapIntelligence(createdMap));
-        }
-        else if (monsterDef.ObjectKind == NpcObjectKind.SoccerBall)
-        {
-            this._logger.LogDebug("Creating soccer ball {spawn}", spawnArea);
-            npc = new SoccerBall(spawnArea, monsterDef, createdMap);
-        }
-        else if (monsterDef.ObjectKind == NpcObjectKind.Destructible)
-        {
-            this._logger.LogDebug("Creating destructible {spawn}", spawnArea);
-            npc = new Destructible(spawnArea, monsterDef, createdMap, eventStateProvider, dropGenerator ?? this._dropGenerator, this.PlugInManager!);
-        }
-        else if (monsterDef.MerchantStore is not null)
-        {
-            this._logger.LogDebug("Creating merchant npc {spawn}", spawnArea);
-            npc = new MerchantNpc(spawnArea, monsterDef, createdMap);
-        }
-        else
-        {
-            this._logger.LogDebug("Creating npc {spawn}", spawnArea);
-            npc = new NonPlayerCharacter(spawnArea, monsterDef, createdMap);
-        }
+        NonPlayerCharacter? npc = null;
 
         try
         {
+            var intelligence = this.TryCreateConfiguredNpcIntelligence(monsterDef, createdMap);
+
+            if (monsterDef.ObjectKind == NpcObjectKind.Monster)
+            {
+                this._logger.LogDebug("Creating monster {spawn}", spawnArea);
+                npc = new Monster(spawnArea, monsterDef, createdMap, dropGenerator ?? this._dropGenerator, intelligence ?? new BasicMonsterIntelligence(), this.PlugInManager, this.PathFinderPool, eventStateProvider);
+            }
+            else if (monsterDef.ObjectKind == NpcObjectKind.Guard)
+            {
+                this._logger.LogDebug("Creating guard {spawn}", spawnArea);
+                npc = new Monster(spawnArea, monsterDef, createdMap, NullDropGenerator.Instance, intelligence ?? new GuardIntelligence(), this.PlugInManager, this.PathFinderPool, eventStateProvider);
+            }
+            else if (monsterDef.ObjectKind == NpcObjectKind.Trap)
+            {
+                this._logger.LogDebug("Creating trap {spawn}", spawnArea);
+                npc = new Trap(spawnArea, monsterDef, createdMap, intelligence ?? new RandomAttackInRangeTrapIntelligence(createdMap));
+            }
+            else if (monsterDef.ObjectKind == NpcObjectKind.SoccerBall)
+            {
+                this._logger.LogDebug("Creating soccer ball {spawn}", spawnArea);
+                npc = new SoccerBall(spawnArea, monsterDef, createdMap);
+            }
+            else if (monsterDef.ObjectKind == NpcObjectKind.Destructible)
+            {
+                this._logger.LogDebug("Creating destructible {spawn}", spawnArea);
+                npc = new Destructible(spawnArea, monsterDef, createdMap, eventStateProvider, dropGenerator ?? this._dropGenerator, this.PlugInManager!);
+            }
+            else if (monsterDef.MerchantStore is not null)
+            {
+                this._logger.LogDebug("Creating merchant npc {spawn}", spawnArea);
+                npc = new MerchantNpc(spawnArea, monsterDef, createdMap);
+            }
+            else
+            {
+                this._logger.LogDebug("Creating npc {spawn}", spawnArea);
+                npc = new NonPlayerCharacter(spawnArea, monsterDef, createdMap);
+            }
+
             npc.SpawnIndex = spawnIndex;
             npc.Initialize();
             await createdMap.AddAsync(npc).ConfigureAwait(false);
@@ -237,7 +238,10 @@ public class MapInitializer : IMapInitializer
         catch (Exception ex)
         {
             this._logger.LogError(ex, $"Object {spawnArea} couldn't be initialized.", spawnArea);
-            await npc.DisposeAsync().ConfigureAwait(false);
+            if (npc is not null)
+            {
+                await npc.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         return null;
@@ -250,7 +254,10 @@ public class MapInitializer : IMapInitializer
     /// <returns>The game map definition.</returns>
     protected virtual GameMapDefinition? GetMapDefinition(ushort mapNumber)
     {
-        return this._configuration.Maps.FirstOrDefault(m => m.Number == mapNumber);
+        var number = mapNumber.GetLowByte();
+        var discriminator = mapNumber.GetHighByte();
+        return this._configuration.Maps.FirstOrDefault(m =>
+            m.Number == number && m.Discriminator == discriminator);
     }
 
     /// <summary>
