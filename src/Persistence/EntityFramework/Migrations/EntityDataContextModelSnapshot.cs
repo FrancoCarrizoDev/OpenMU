@@ -38,6 +38,9 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                     b.Property<bool>("IsBot")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsNetworkObservationActive")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTemplate")
                         .HasColumnType("boolean");
 
@@ -507,6 +510,42 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                     b.ToTable("CastleSiegeData", "data");
                 });
 
+            modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeGuild", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CastleSiegeDataId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("GuildName")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<bool>("IsAllianceMaster")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<byte>("Side")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CastleSiegeDataId");
+
+                    b.HasIndex("GuildId")
+                        .IsUnique();
+
+                    b.ToTable("CastleSiegeGuild", "data");
+                });
+
             modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeGuildRegistration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -609,6 +648,27 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                         .IsUnique();
 
                     b.ToTable("CastleSiegeNpcState", "data");
+                });
+
+            modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegePendingReward", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemDefinitionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.HasIndex("ItemDefinitionId");
+
+                    b.ToTable("CastleSiegePendingReward", "data");
                 });
 
             modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeStateScheduleEntry", b =>
@@ -1121,6 +1181,9 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int>("AggregateType")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("CharacterClassId")
                         .HasColumnType("uuid");
@@ -3792,6 +3855,21 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                     b.Property<string>("IpResolverParameter")
                         .HasColumnType("text");
 
+                    b.Property<int>("NetworkAnalyzerLiveBufferSize")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NetworkObservationArchivePath")
+                        .HasColumnType("text");
+
+                    b.Property<int>("NetworkObservationMaxSessionSizeMb")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NetworkObservationMaxTotalSizeMb")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NetworkObservationRetentionDays")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("ReadConsoleInput")
                         .HasColumnType("boolean");
 
@@ -4045,6 +4123,20 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeGuild", b =>
+                {
+                    b.HasOne("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeData", null)
+                        .WithMany("RawGuilds")
+                        .HasForeignKey("CastleSiegeDataId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("MUnique.OpenMU.Persistence.EntityFramework.Model.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeGuildRegistration", b =>
                 {
                     b.HasOne("MUnique.OpenMU.Persistence.EntityFramework.Model.Guild", null)
@@ -4076,6 +4168,21 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
                         .WithMany("RawNpcStates")
                         .HasForeignKey("CastleSiegeDataId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegePendingReward", b =>
+                {
+                    b.HasOne("MUnique.OpenMU.Persistence.EntityFramework.Model.Character", null)
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MUnique.OpenMU.Persistence.EntityFramework.Model.ItemDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ItemDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeStateScheduleEntry", b =>
@@ -5547,6 +5654,8 @@ namespace MUnique.OpenMU.Persistence.EntityFramework.Migrations
 
             modelBuilder.Entity("MUnique.OpenMU.Persistence.EntityFramework.Model.CastleSiegeData", b =>
                 {
+                    b.Navigation("RawGuilds");
+
                     b.Navigation("RawNpcStates");
                 });
 

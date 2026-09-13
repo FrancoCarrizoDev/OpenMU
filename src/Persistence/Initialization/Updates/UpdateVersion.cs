@@ -1,4 +1,4 @@
-// <copyright file="UpdateVersion.cs" company="MUnique">
+﻿// <copyright file="UpdateVersion.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -526,27 +526,82 @@ public enum UpdateVersion
     FinishRageFighterMasterTree = 103,
 
     /// <summary>
+    /// The version of the <see cref="ConfigureCastleSiegeParticipationUpdatePlugIn"/>.
+    /// </summary>
+    ConfigureCastleSiegeParticipation = 104,
+
+    /// <summary>
+    /// The version of the <see cref="RegenerationsRefactorPlugIn075"/>.
+    /// </summary>
+    RegenerationsRefactor075 = 105,
+
+    /// <summary>
+    /// The version of the <see cref="RegenerationsRefactorPlugIn095D"/>.
+    /// </summary>
+    RegenerationsRefactor095d = 106,
+
+    /// <summary>
+    /// The version of the <see cref="RegenerationsRefactorPlugInSeason6"/>.
+    /// </summary>
+    RegenerationsRefactorSeason6 = 107,
+
+    /// <summary>
+    /// The version of the <see cref="ConfigureCastleSiegeEconomyUpdatePlugIn"/>.
+    /// </summary>
+    ConfigureCastleSiegeEconomy = 108,
+
+    /// <summary>
+    /// The version of the <see cref="RemoveDuplicateStatAttributesPlugIn075"/>.
+    /// </summary>
+    RemoveDuplicateStatAttributes075 = 109,
+
+    /// <summary>
+    /// The version of the <see cref="RemoveDuplicateStatAttributesPlugIn095D"/>.
+    /// </summary>
+    RemoveDuplicateStatAttributes095d = 110,
+
+    /// <summary>
+    /// The version of the <see cref="RemoveDuplicateStatAttributesPlugInSeason6"/>.
+    /// </summary>
+    RemoveDuplicateStatAttributesSeason6 = 111,
+
+    /// <summary>
+    /// The version of the <see cref="ConfigureCastleSiegeLifeStoneUpdatePlugIn"/>.
+    /// </summary>
+    ConfigureCastleSiegeLifeStone = 112,
+
+    /// <summary>
+    /// The version of the <see cref="AddKanturuDataUpdatePlugIn"/>.
+    /// </summary>
+    AddKanturuData = 113,
+
+    /// <summary>
+    /// The version of the <see cref="AddKanturuMapContentUpdatePlugIn"/>.
+    /// </summary>
+    AddKanturuMapContent = 114,
+
+    /// <summary>
     /// The version of the <see cref="ConfigureSeasonOneElfSoldierBuffPlugIn"/>.
     /// </summary>
-    ConfigureSeasonOneElfSoldierBuff = 104,
+    ConfigureSeasonOneElfSoldierBuff = 10001,
 
     /// <summary>
     /// The version of the <see cref="EnableSeasonOneResetFeaturePlugIn"/>.
     /// </summary>
-    EnableSeasonOneResetFeature = 105,
+    EnableSeasonOneResetFeature = 10002,
 
     /// <summary>
     /// The version of the <see cref="AddSeasonOneLostTowerElfSoldierPlugIn"/>.
     /// </summary>
-    AddSeasonOneLostTowerElfSoldier = 106,
+    AddSeasonOneLostTowerElfSoldier = 10003,
 
     /// <summary>
     /// The version of the <see cref="TuneSeasonOneResetPointsPlugIn"/>.
     /// </summary>
-    TuneSeasonOneResetPoints = 107,
+    TuneSeasonOneResetPoints = 10004,
 
     /// <summary>
     /// The version of the <see cref="ResetSeasonOneTestAccountsPlugIn"/>.
     /// </summary>
-    ResetSeasonOneTestAccounts = 108,
+    ResetSeasonOneTestAccounts = 10005,
 }

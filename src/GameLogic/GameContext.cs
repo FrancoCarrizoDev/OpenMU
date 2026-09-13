@@ -1,4 +1,4 @@
-// <copyright file="GameContext.cs" company="MUnique">
+﻿// <copyright file="GameContext.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -10,6 +10,7 @@ using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Threading;
 using MUnique.OpenMU.GameLogic.MiniGames;
+using MUnique.OpenMU.GameLogic.MiniGames.Kanturu;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Interfaces;
@@ -283,6 +284,9 @@ public class GameContext : AsyncDisposable, IGameContext
                 case MiniGameType.BloodCastle:
                     miniGameContext = new BloodCastleContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
                     break;
+                case MiniGameType.Kanturu:
+                    miniGameContext = new KanturuContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
+                    break;
                 default:
                     miniGameContext = new MiniGameContext(miniGameKey, miniGameDefinition, this, this._mapInitializer);
                     break;
@@ -363,7 +367,21 @@ public class GameContext : AsyncDisposable, IGameContext
             this.PlayersByCharacterName.TryRemove(player.SelectedCharacter.Name, out _);
         }
 
-        player.CurrentMap?.RemoveAsync(player);
+        if (player.CurrentMap is { } currentMap)
+        {
+            // Awaited and guarded: discarding the ValueTask left the removal running in the
+            // background - racing the player's own disposal on the dispose-without-disconnect
+            // paths - with any exception lost, while this method has to stay exception-free for
+            // the teardown paths which call it right before the dispose.
+            try
+            {
+                await currentMap.RemoveAsync(player).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                player.Logger.LogError(ex, "Error while removing player {Player} from its map.", player);
+            }
+        }
 
         player.PlayerDisconnected -= this.RemovePlayerAsync;
         player.PlayerEnteredWorld -= this.PlayerEnteredWorldAsync;

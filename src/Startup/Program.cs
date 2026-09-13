@@ -20,12 +20,16 @@ using MUnique.OpenMU.ConnectServer;
 using MUnique.OpenMU.DataModel.Configuration;
 using MUnique.OpenMU.FriendServer;
 using MUnique.OpenMU.GameLogic;
+using MUnique.OpenMU.GameServer;
 using MUnique.OpenMU.GuildServer;
 using MUnique.OpenMU.Interfaces;
 using MUnique.OpenMU.LoginServer;
 using MUnique.OpenMU.Network;
+using MUnique.OpenMU.Network.Analyzer;
 using MUnique.OpenMU.Persistence;
+using MUnique.OpenMU.Persistence.AdminAuth;
 using MUnique.OpenMU.Persistence.EntityFramework;
+using MUnique.OpenMU.Persistence.EntityFramework.AdminAuth;
 using MUnique.OpenMU.Persistence.EntityFramework.Json;
 using MUnique.OpenMU.Persistence.Initialization;
 using MUnique.OpenMU.Persistence.Initialization.Updates;
@@ -33,8 +37,7 @@ using MUnique.OpenMU.Persistence.Initialization.Version075;
 using MUnique.OpenMU.Persistence.InMemory;
 using MUnique.OpenMU.PlugIns;
 using MUnique.OpenMU.Web.AdminPanel;
-using MUnique.OpenMU.Web.AdminPanel.Services;
-using MUnique.OpenMU.Web.API;
+using MUnique.OpenMU.Web.AdminPanel.API;
 using MUnique.OpenMU.Web.Map.Map;
 using MUnique.OpenMU.Web.Shared;
 using Nito.AsyncEx.Synchronous;
@@ -254,6 +257,25 @@ internal sealed class Program : IDisposable
         builder.Host.UseSerilog(this._logger);
         if (addAdminPanel)
         {
+            // The storage of the admin panel users has to be registered before the panel itself,
+            // which only adds a fallback when nothing else is registered.
+            builder.Services.AddAdminUserRepository();
+            builder.Services.AddSingleton<IBackupService>(s =>
+            {
+                var contextProvider = s.GetRequiredService<IMigratableDatabaseContextProvider>();
+                if (contextProvider is IPersistenceContextProvider persistenceContextProvider)
+                {
+                    return new BackupService(persistenceContextProvider, s.GetRequiredService<IAdminUserRepository>());
+                }
+
+                return new InMemoryBackupService(s.GetRequiredService<IPersistenceContextProvider>(), s.GetRequiredService<IAdminUserRepository>());
+            });
+            if (!args.Contains("-demo"))
+            {
+                // A snapshot of the database is only possible when there is a real database.
+                builder.Services.AddSingleton<IDatabaseSnapshotService, DatabaseSnapshotService>();
+            }
+
             builder.AddAdminPanel(includeMapApp: true);
         }
 
@@ -292,6 +314,7 @@ internal sealed class Program : IDisposable
             .AddSingleton<IFriendNotifier, FriendNotifierToGameServer>()
             .AddSingleton<PlugInManager>()
             .AddSingleton<IServerProvider, LocalServerProvider>()
+            .AddSingleton<IPacketCaptureService>(CreatePacketCaptureService)
             .AddSingleton<ICollection<PlugInConfiguration>>(this.PlugInConfigurationsFactory)
             .AddTransient<ReferenceHandler, ByDataSourceReferenceHandler>(provider =>
             {
@@ -309,6 +332,7 @@ internal sealed class Program : IDisposable
             .AddHostedService<GameServerContainer>()
             .AddHostedService(provider => provider.GetService<GameServerContainer>()!)
             .AddHostedService(provider => provider.GetService<ConnectServerContainer>()!)
+            .AddNetworkObservation()
             .AddControllers().AddApplicationPart(typeof(ServerController).Assembly);
 
         var host = builder.Build();
@@ -574,6 +598,8 @@ internal sealed class Program : IDisposable
             return;
         }
 
+        await MigrateLegacySeasonOneUpdateVersionsAsync(contextProvider).ConfigureAwait(false);
+
         HashSet<int> installedVersions;
         using (var context = contextProvider.CreateNewContext())
         {
@@ -617,6 +643,56 @@ internal sealed class Program : IDisposable
 
         this._logger.Information("Applied {UpdateCount} mandatory Season 1 configuration updates.", updates.Count);
         Console.WriteLine($"Applied mandatory Season 1 configuration updates: {string.Join(", ", updates.Select(update => update.Version))}.");
+    }
+
+    private static async Task MigrateLegacySeasonOneUpdateVersionsAsync(IPersistenceContextProvider contextProvider)
+    {
+        using var context = contextProvider.CreateNewContext();
+        var updates = await context.GetAsync<ConfigurationUpdate>().ConfigureAwait(false);
+        var remapped = false;
+        foreach (var update in updates)
+        {
+            var migratedVersion = (update.Version, update.CreatedAt) switch
+            {
+                (104, { } createdAt) when createdAt == new DateTime(2026, 9, 6, 0, 0, 0, DateTimeKind.Utc) => 10001,
+                (105, { } createdAt) when createdAt == new DateTime(2026, 9, 6, 0, 0, 1, DateTimeKind.Utc) => 10002,
+                (106, { } createdAt) when createdAt == new DateTime(2026, 9, 6, 0, 0, 2, DateTimeKind.Utc) => 10003,
+                (107, { } createdAt) when createdAt == new DateTime(2026, 9, 6, 0, 0, 2, DateTimeKind.Utc) => 10004,
+                (108, { } createdAt) when createdAt == new DateTime(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc) => 10005,
+                _ => update.Version,
+            };
+
+            if (migratedVersion == update.Version)
+            {
+                continue;
+            }
+
+            update.Version = migratedVersion;
+            remapped = true;
+        }
+
+        if (!remapped)
+        {
+            return;
+        }
+
+        var updateStates = await context.GetAsync<ConfigurationUpdateState>().ConfigureAwait(false);
+        foreach (var updateState in updateStates.Where(state => state.InitializationKey == MUnique.OpenMU.Persistence.Initialization.VersionSeasonOne.DataInitialization.Id))
+        {
+            updateState.CurrentInstalledVersion = Math.Max(updateState.CurrentInstalledVersion, 10005);
+        }
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    private static IPacketCaptureService CreatePacketCaptureService(IServiceProvider serviceProvider)
+    {
+        var serverProvider = serviceProvider.GetService<IServerProvider>()
+                             ?? throw new InvalidOperationException($"{nameof(IServerProvider)} not registered.");
+        var bufferSize = _systemConfiguration?.NetworkAnalyzerLiveBufferSize ?? 0;
+        return new PacketCaptureService(
+            serverProvider,
+            bufferSize > 0 ? bufferSize : LiveCapturedConnection.DefaultMaximumPacketCount);
     }
 
     private async Task ReadSystemConfigurationAsync(IPersistenceContextProvider persistenceContextProvider)

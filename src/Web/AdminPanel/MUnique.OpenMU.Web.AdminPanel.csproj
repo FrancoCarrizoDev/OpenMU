@@ -28,6 +28,7 @@
     <PackageReference Include="BlazorInputFile" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" />
     <PackageReference Include="Nito.AsyncEx" />
+    <PackageReference Include="QRCoder" />
     <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" />
   </ItemGroup>
@@ -35,6 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\DataModel\MUnique.OpenMU.DataModel.csproj" />
     <ProjectReference Include="..\..\GameLogic\MUnique.OpenMU.GameLogic.csproj" />
+    <ProjectReference Include="..\..\Network\Analyzer\MUnique.OpenMU.Network.Analyzer.csproj" />
     <ProjectReference Include="..\..\Persistence\Initialization\MUnique.OpenMU.Persistence.Initialization.csproj" />
     <ProjectReference Include="..\..\Persistence\MUnique.OpenMU.Persistence.csproj" />
     <ProjectReference Include="..\Map\MUnique.OpenMU.Web.Map.csproj" />

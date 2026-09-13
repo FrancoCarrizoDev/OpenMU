@@ -133,8 +133,20 @@ internal sealed class BotNavigator : AsyncDisposable
 
     private const int MaxPointPickAttempts = 25;
 
-    /// <summary>A party member keeps within this distance (tiles) of its leader; beyond it, it walks back.</summary>
+    /// <summary>
+    /// Follow trigger for mini-game events: a participant further than this (tiles) from its
+    /// leader walks back. Open-world party formation uses <see cref="PartyRegroupDistance"/> instead.
+    /// </summary>
     private const int FollowDistance = 10;
+
+    /// <summary>
+    /// Open-world formation radius: with nothing to fight around the leader, a follower closes back
+    /// in to within this distance (tiles). Deliberately tighter than <see cref="HuntingRange"/>, so the
+    /// party stacks up when idle; the regroup walk itself is gated on "no fightable monster near the
+    /// leader" (see <see cref="EvaluateFollowerHuntingAsync"/>), so combat drift out to hunting range
+    /// never triggers a yank-back mid-fight.
+    /// </summary>
+    private const int PartyRegroupDistance = 2;
 
     /// <summary>
     /// Hunting grounds closer than this (tiles) to a recent death site are avoided after the same
@@ -155,6 +167,14 @@ internal sealed class BotNavigator : AsyncDisposable
 
     /// <summary>The game's own warp action, so a bot travels on exactly a player's terms - fare included.</summary>
     private static readonly WarpAction WarpAction = new();
+
+    /// <summary>
+    /// Cache of which maps' safezone spawn gates have a walkable tile, so a bot may safely be sent
+    /// there. Keyed by the resolved safezone map's id, not its number: map numbers are not unique -
+    /// the Devil Squares share number 9, and a server can host several game configurations whose
+    /// maps carry the same numbers over different terrain. See <see cref="HasWalkableSpawnGate"/>.
+    /// </summary>
+    private static readonly ConcurrentDictionary<Guid, bool> WalkableSpawnGateCache = new();
 
     private static readonly TimeSpan EvaluationInterval = TimeSpan.FromSeconds(1);
 
@@ -321,6 +341,59 @@ internal sealed class BotNavigator : AsyncDisposable
         return Math.Max(1, (int)area.Quantity) * Math.Max(1, proximity);
     }
 
+    /// <summary>
+    /// Whether a bot may safely be sent to the map: the safezone spawn gate it would be recovered to
+    /// has at least one walkable tile. A warp which lands a bot on a blocked tile is recovered by
+    /// <see cref="Player.WarpToSafezoneAsync"/>, and for a connection-less bot that recovery runs
+    /// inline (see <see cref="OfflineMapChangePlugIn"/>) - so a spawn gate with no walkable tile at
+    /// all used to recurse until the stack overflowed. The player's map transitions now bound that
+    /// recovery, so this filter is no longer what keeps the server alive; it keeps the bot from
+    /// picking a map it cannot stand in and being bounced straight back out of it.
+    /// </summary>
+    /// <param name="map">The map the bot considers warping to.</param>
+    /// <returns>True, if the map's resolved safezone spawn gate has a walkable tile.</returns>
+    /// <remarks>
+    /// The verdict is cached for the lifetime of the process, keyed by the resolved safezone map -
+    /// terrain is static configuration, so it is parsed once and shared by every bot. Terrain edited
+    /// through the admin panel therefore needs a server restart to be taken into account.
+    /// Only maps whose spawn gate has *zero* walkable tiles are excluded. A gate with a few walkable
+    /// tiles can still, under PlaceAtGateAsync's single random roll, miss and recover to town - a
+    /// quality glitch, not a crash, accepted by design.
+    /// </remarks>
+    internal static bool HasWalkableSpawnGate(GameMapDefinition map)
+    {
+        // The bot is not recovered to the destination map's own gate but to its safezone map's -
+        // mirroring Player.GetSpawnGateOfCurrentMapAsync. Many maps (dungeons, event maps, Icarus,
+        // Karutan 2, ...) point somewhere else entirely, so checking the destination itself would
+        // both reject safe maps and miss the ones which actually strand a bot.
+        var safezoneMap = map.SafezoneMap ?? map;
+        var mapId = safezoneMap.GetId();
+        if (mapId == Guid.Empty)
+        {
+            // GetId falls back to Guid.Empty for anything it cannot identify, so caching under it
+            // would file every such map under one entry and hand the first map's verdict to all the
+            // others - a single blocked one would then reject every map there is.
+            return HasWalkableSpawnGateCore(safezoneMap);
+        }
+
+        return WalkableSpawnGateCache.GetOrAdd(mapId, _ => HasWalkableSpawnGateCore(safezoneMap));
+    }
+
+    /// <summary>
+    /// The uncached terrain check behind <see cref="HasWalkableSpawnGate"/>, on an already resolved
+    /// safezone map.
+    /// </summary>
+    /// <param name="safezoneMap">The resolved safezone map.</param>
+    /// <returns>True, if the map's spawn gate has a walkable tile.</returns>
+    internal static bool HasWalkableSpawnGateCore(GameMapDefinition safezoneMap)
+    {
+        // The map is usually not loaded when a bot weighs it up, so its GameMap (which would expose
+        // Terrain and SafeZoneSpawnGate ready-made) may not exist - and forcing it to load just for
+        // this check would be far more expensive than parsing the terrain once.
+        var terrain = new GameMapTerrain(safezoneMap);
+        return terrain.GetWalkableCoordinate(safezoneMap.GetSafezoneGate(terrain)) is not null;
+    }
+
     /// <inheritdoc />
     protected override async ValueTask DisposeAsyncCore()
     {
@@ -464,7 +537,7 @@ internal sealed class BotNavigator : AsyncDisposable
         }
 
         // Party bookkeeping: answer a pending invitation from a player once its human-like delay
-        // passed, and leave a party with a human again when the bot got bored (see BotPartyHandler).
+        // passed (see BotPartyHandler).
         await BotPartyHandler.ProcessAsync(this._player).ConfigureAwait(false);
 
         // Make sure the bot always carries healing and mana potions. Without them, the offline handlers
@@ -484,6 +557,11 @@ internal sealed class BotNavigator : AsyncDisposable
             this._nextEquipCheckUtc = DateTime.UtcNow + EquipCheckInterval;
             this._player.PendingBotActions.Enqueue(() => BotEquipmentHandler.TryEquipUpgradesAsync(this._player));
 
+            // Looted skill orbs and scrolls are consumed into new skills like a human would (see
+            // BotSkillHandler). Queued for the same reason: learning mutates the skill list the combat
+            // handler may be enumerating on its own timer.
+            this._player.PendingBotActions.Enqueue(() => BotSkillHandler.TryLearnSkillsAsync(this._player));
+
             // Wings don't drop, so the loot-driven equipment progression above never provides them;
             // they are earned at the classic level milestones instead (see BotWingHandler). Queued
             // for the same reason: equipping mount item power-ups.
@@ -496,11 +574,22 @@ internal sealed class BotNavigator : AsyncDisposable
         // tracked separately in _destination.
         var inSafezone = map.Terrain.SafezoneMap[this._player.Position.X, this._player.Position.Y];
 
+        // Resolved here (not just before the follow branch) so the tether below holds on every tick,
+        // including ticks that return early while walking or on an errand.
+        var leaderToFollow = this.GetPartyLeaderToFollow();
+        var isTetheredToLeader = leaderToFollow is not null
+            && ReferenceEquals(leaderToFollow.CurrentMap, map)
+            && !inSafezone;
+
         // Combat centre: normally the bot's own position (self-defence while travelling and at the hunting
-        // ground). But while inside the safezone we aim it at the destination, so the combat handler does NOT
+        // ground). A follower on the leader's map hunts tethered to the leader instead, so the combat
+        // handler only ever picks targets near him - this holds continuously, not just on idle ticks.
+        // While inside the safezone we aim it at the destination, so the combat handler does NOT
         // make the bot stand in town swinging at monsters just outside (which it can't damage from a safezone) -
         // it should simply walk out of town instead.
-        this._player.HuntingOrigin = inSafezone && this._hasDestination ? this._destination : this._player.Position;
+        this._player.HuntingOrigin = isTetheredToLeader
+            ? leaderToFollow!.Position
+            : inSafezone && this._hasDestination ? this._destination : this._player.Position;
 
         // Watchdog bookkeeping: remember when the bot last actually changed position.
         if (this._player.Position != this._lastPosition)
@@ -525,9 +614,17 @@ internal sealed class BotNavigator : AsyncDisposable
         if (stuck)
         {
             // Break free: pick a fresh hunting ground and walk to it now. Issuing the walk resets the wedged
-            // walker, and a new destination avoids re-stalling on the same blocked path.
+            // walker, and a new destination avoids re-stalling on the same blocked path. A follower
+            // regroups on its leader instead of roaming to a random ground - the leader decides where
+            // the party hunts.
             this._lastMoveUtc = DateTime.UtcNow;
             this._emptyGroundSince = null;
+            if (leaderToFollow is not null && ReferenceEquals(leaderToFollow.CurrentMap, map))
+            {
+                await this.TravelTowardAsync(map, leaderToFollow.Position, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
             await this.PickGroundAndTravelAsync(map, cancellationToken).ConfigureAwait(false);
             return;
         }
@@ -583,17 +680,21 @@ internal sealed class BotNavigator : AsyncDisposable
         }
 
         // Party members follow their leader instead of roaming on their own: to the leader's map when
-        // it warped away, and towards the leader when it moved off. Near the leader they hunt normally
-        // (the party heal/buff handlers and the party experience bonus need the group to stay together).
-        // Followers never warp on their own - the leader (the lowest-level member, so it only ever picks
-        // maps the whole group can hunt on) decides where the party goes.
-        var leaderToFollow = this.GetPartyLeaderToFollow();
+        // it warped away (see TryFollowLeaderAsync), and around him while on the same map (see
+        // EvaluateFollowerHuntingAsync - hunt within range while there is something to fight, regroup
+        // into formation when idle). Followers never roam to independent hunting grounds, warp on
+        // their own, or step down barren maps - the leader (the lowest-level member, so it only ever
+        // picks maps the whole group can hunt on) decides where the party goes. Trade-off, by design:
+        // if the leader idles in town or is wedged, its followers idle with him.
         if (leaderToFollow is not null)
         {
             if (await this.TryFollowLeaderAsync(map, leaderToFollow, cancellationToken).ConfigureAwait(false))
             {
                 return;
             }
+
+            await this.EvaluateFollowerHuntingAsync(map, leaderToFollow, inSafezone, cancellationToken).ConfigureAwait(false);
+            return;
         }
 
         // A bot whose map is no longer the best it could safely hunt warps away with priority - even
@@ -949,10 +1050,6 @@ internal sealed class BotNavigator : AsyncDisposable
         // Fight from wherever the bot stands; the combat handler engages the targets around it.
         this._player.HuntingOrigin = this._player.Position;
 
-        // The party boredom timer must not run down (let alone fire) mid-event; the window
-        // restarts once the event is over.
-        this._player.PartyBoredomAtUtc = null;
-
         if (this._player.IsWalking)
         {
             return;
@@ -1044,10 +1141,12 @@ internal sealed class BotNavigator : AsyncDisposable
     }
 
     /// <summary>
-    /// Keeps a party member with its leader: warps to the leader's map when the leader warped away,
-    /// and walks towards the leader when it moved out of the follow range.
+    /// Follows the party leader across maps: warps to the leader's map when the leader warped away and
+    /// settled there. Same-map spacing is NOT handled here - it is owned by
+    /// <see cref="EvaluateFollowerHuntingAsync"/>, which gates the regroup walk on "nothing to fight",
+    /// so a follower engaged at hunting range is never yanked back mid-fight.
     /// </summary>
-    /// <returns>True, if following consumed this tick; false, if the bot is close enough and should hunt normally.</returns>
+    /// <returns>True, if cross-map following consumed this tick; false, if on the same map (follower hunting runs next).</returns>
     private async ValueTask<bool> TryFollowLeaderAsync(GameMap map, Player leader, CancellationToken cancellationToken)
     {
         if (!ReferenceEquals(leader.CurrentMap, map))
@@ -1106,15 +1205,56 @@ internal sealed class BotNavigator : AsyncDisposable
             return true;
         }
 
-        if (this._player.GetDistanceTo(leader.Position) > FollowDistance)
+        // Same map: spacing is owned by EvaluateFollowerHuntingAsync - return without moving, so the
+        // follower can keep fighting a monster at hunting range instead of being yanked back mid-fight.
+        return false;
+    }
+
+    /// <summary>
+    /// Hunts around the party leader on the same map: monsters within hunting range
+    /// (<see cref="HuntingRange"/>, mirroring the follower's effective combat range of
+    /// <see cref="Bots.BotMuHelperSettings.HuntingRange"/>) of the leader are fought via the combat
+    /// handler (tethered through <see cref="OfflinePlayer.HuntingOrigin"/>, which is also set where the
+    /// origin is decided so it holds on walking ticks), and only with nothing fightable near the leader
+    /// does the bot close back in to within <see cref="PartyRegroupDistance"/>. Followers never pick
+    /// independent hunting grounds - the leader decides where the party hunts.
+    /// </summary>
+    private async ValueTask EvaluateFollowerHuntingAsync(GameMap map, Player leader, bool inSafezone, CancellationToken cancellationToken)
+    {
+        // Tether combat to the leader, so the bot fights what is near him instead of wandering off.
+        this._player.HuntingOrigin = leader.Position;
+
+        if (inSafezone)
+        {
+            // In town there is nothing to fight; stay with the leader, he decides when to move out.
+            this._hasDestination = false;
+            this._emptyGroundSince = null;
+            return;
+        }
+
+        var monsterNearLeader = map.GetAttackablesInRange(leader.Position, HuntingRange)
+            .OfType<Monster>()
+            .Any(m => m.IsAlive && !m.IsAtSafezone() && CombatHandler.IsSafeTarget(this._player, m.Definition));
+        if (monsterNearLeader)
+        {
+            // Something fightable near the leader: hold position and let the combat handler engage,
+            // even when drifted out to hunting range - walking back now would interrupt the fight.
+            this._hasDestination = false;
+            this._emptyGroundSince = null;
+            return;
+        }
+
+        // Nothing to fight around the leader: only now close back into formation.
+        if (this._player.GetDistanceTo(leader.Position) > PartyRegroupDistance)
         {
             this._destination = leader.Position;
             this._hasDestination = true;
             await this.TravelTowardAsync(map, leader.Position, cancellationToken).ConfigureAwait(false);
-            return true;
+            return;
         }
 
-        return false;
+        this._hasDestination = false;
+        this._emptyGroundSince = null;
     }
 
     /// <summary>
@@ -1151,8 +1291,8 @@ internal sealed class BotNavigator : AsyncDisposable
         if (BotPartyHandler.HasHumanCompanion(this._player))
         {
             // Not in the middle of a hunting session with a player: the reset would wipe the bot's
-            // strength and teleport it home, deserting the group. It resets right after the party
-            // ends (the boredom timer of BotPartyHandler bounds how long that takes).
+            // strength and teleport it home, deserting the group. It resets once the party with the
+            // human companion ends.
             return false;
         }
 
@@ -1776,7 +1916,8 @@ internal sealed class BotNavigator : AsyncDisposable
 
             if (!candidate.TryGetRequirementError(this._player, out _)
                 && this.TryGetLegalWarp(candidate, out var candidateWarp)
-                && this.CanAffordWarp(candidateWarp))
+                && this.CanAffordWarp(candidateWarp)
+                && HasWalkableSpawnGate(candidate))
             {
                 warp = candidateWarp;
                 mapDefinition = candidate;
@@ -1831,7 +1972,9 @@ internal sealed class BotNavigator : AsyncDisposable
                 continue;
             }
 
-            if (this.TryGetLegalWarp(candidate, out var candidateWarp) && this.CanAffordWarp(candidateWarp))
+            if (this.TryGetLegalWarp(candidate, out var candidateWarp)
+                && this.CanAffordWarp(candidateWarp)
+                && HasWalkableSpawnGate(candidate))
             {
                 candidates.Add((candidateWarp, candidate, best));
             }

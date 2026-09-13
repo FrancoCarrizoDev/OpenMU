@@ -318,7 +318,7 @@ public class ExperienceRateSplitTest
             globalMasterExperienceRate: 1.0f,
             maximumLevel: 400,
             maximumMasterLevel: 200);
-        context.Configuration.GlobalBaseAttributeValues.Add(new MUnique.OpenMU.Persistence.BasicModel.ConstValueAttribute(390, Stats.VipMaximumLevel));
+        context.Configuration.GlobalBaseAttributeValues.Add(new ConstValueAttribute(390, Stats.VipMaximumLevel));
 
         var player = await PlayerTestHelper.CreatePlayerAsync(context, isVip: true).ConfigureAwait(false);
         player.Attributes![Stats.Level] = 390;
