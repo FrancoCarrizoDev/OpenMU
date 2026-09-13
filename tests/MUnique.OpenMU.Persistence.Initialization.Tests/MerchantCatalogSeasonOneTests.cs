@@ -57,4 +57,3 @@ internal sealed class MerchantCatalogSeasonOneTests
         });
     }
 }
-
