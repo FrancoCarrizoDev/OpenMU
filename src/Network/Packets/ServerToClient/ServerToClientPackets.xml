@@ -3856,6 +3856,53 @@
       </Enums>
     </Packet>
     <Packet>
+      <HeaderType>C1Header</HeaderType>
+      <Code>4E</Code>
+      <Name>MagicEffectDetail</Name>
+      <Length>17</Length>
+      <Direction>ServerToClient</Direction>
+      <SentWhen>A magic effect was added, removed or refreshed for the player himself. It carries the duration and magnitude of the effect so the client can render a tooltip with the remaining and total duration.</SentWhen>
+      <CausedReaction>The client may update an extended buff tooltip with the precise remaining/total duration and the magnitude of the effect. Clients which do not understand this opcode ignore it, preserving full backward compatibility.</CausedReaction>
+      <Fields>
+        <Field>
+          <Index>3</Index>
+          <Type>Byte</Type>
+          <Name>EffectNumber</Name>
+          <Description>The magic effect definition number (matches MagicEffectStatus.EffectId and EffectItemConsumption.MagicEffectNumber).</Description>
+        </Field>
+        <Field>
+          <Index>4</Index>
+          <Type>ShortBigEndian</Type>
+          <Name>PlayerId</Name>
+          <Description>The id of the player whose effect changed.</Description>
+        </Field>
+        <Field>
+          <Index>6</Index>
+          <Type>Byte</Type>
+          <Name>Flags</Name>
+          <Description>Bit 0 (0x01): IsActive (1 = added/refreshed, 0 = removed). Bit 1 (0x02): HasMagnitude. Bit 2 (0x04): HasRemainingSeconds. Bit 3 (0x08): HasTotalSeconds.</Description>
+        </Field>
+        <Field>
+          <Index>7</Index>
+          <Type>ShortLittleEndian</Type>
+          <Name>Magnitude</Name>
+          <Description>Unsigned 16-bit magnitude of the first power-up of the effect, in effect-specific units (raw server value, saturated to [0, 65535]). For damage-over-time effects such as poison the magnitude is the value of the configured power-up, NOT the per-tick damage (which is computed from the target's current health and the attacker's poison multiplier at tick time). 0 when the effect has no associated power-up boost.</Description>
+        </Field>
+        <Field>
+          <Index>9</Index>
+          <Type>IntegerLittleEndian</Type>
+          <Name>RemainingSeconds</Name>
+          <Description>Seconds remaining until the effect expires. 0 when the effect has just been removed or has just expired. On activation or refresh, this equals TotalSeconds.</Description>
+        </Field>
+        <Field>
+          <Index>13</Index>
+          <Type>IntegerLittleEndian</Type>
+          <Name>TotalSeconds</Name>
+          <Description>Total duration in seconds the effect will be active for, taken from the live MagicEffect.Duration. 0 for effect types which have no meaningful duration (e.g. passive flags).</Description>
+        </Field>
+      </Fields>
+    </Packet>
+    <Packet>
       <HeaderType>C3Header</HeaderType>
       <Code>30</Code>
       <Name>NpcWindowResponse</Name>

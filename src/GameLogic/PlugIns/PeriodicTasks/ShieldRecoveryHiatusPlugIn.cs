@@ -45,7 +45,7 @@ public class ShieldRecoveryHiatusPlugIn : IPeriodicTaskPlugIn, IAttackableMovedP
     }
 
     /// <inheritdoc />
-    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo)
+    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo, Skill? skill)
     {
         var defender = attackable as Player;
         var attackerPlayer = attacker as Player ?? (attacker as Monster)?.SummonedBy;

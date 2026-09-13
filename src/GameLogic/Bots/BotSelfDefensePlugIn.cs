@@ -21,7 +21,7 @@ using MUnique.OpenMU.PlugIns;
 public class BotSelfDefensePlugIn : IAttackableGotHitPlugIn
 {
     /// <inheritdoc />
-    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo)
+    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo, Skill? skill)
     {
         if (attackable is OfflinePlayer bot
             && bot.Account?.IsBot == true

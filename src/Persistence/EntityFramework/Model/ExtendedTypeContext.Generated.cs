@@ -24,6 +24,7 @@ public class ExtendedTypeContext : Microsoft.EntityFrameworkCore.DbContext
     /// <inheritdoc/>
     protected override void OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
     {
+        modelBuilder.Ignore<MUnique.OpenMU.DataModel.Statistics.CombatMetric>();
         modelBuilder.Ignore<MUnique.OpenMU.DataModel.Statistics.MiniGameRankingEntry>();
         modelBuilder.Ignore<MUnique.OpenMU.DataModel.Entities.Account>();
         modelBuilder.Ignore<MUnique.OpenMU.DataModel.Entities.AppearanceData>();

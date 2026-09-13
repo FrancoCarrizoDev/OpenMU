@@ -40,7 +40,7 @@ public class SelfDefensePlugIn : IPeriodicTaskPlugIn, IAttackableGotHitPlugIn, I
     }
 
     /// <inheritdoc />
-    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo)
+    public void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo, Skill? skill)
     {
         var defender = attackable as Player ?? (attackable as Monster)?.SummonedBy;
         var attackerPlayer = attacker as Player ?? (attacker as Monster)?.SummonedBy;

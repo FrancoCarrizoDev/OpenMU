@@ -674,7 +674,7 @@ public class RivalGuildCombatTest
         this._gameServerContext.UpdateGuildHostility(KillerGuildId, [KillerGuildId], VictimGuildId, [VictimGuildId], true);
 
         var plugIn = new SelfDefensePlugIn();
-        plugIn.AttackableGotHit(this._victim, this._killer, new HitInfo(100, 0, DamageAttributes.Undefined));
+        plugIn.AttackableGotHit(this._victim, this._killer, new HitInfo(100, 0, DamageAttributes.Undefined), null);
 
         Assert.That(this._gameServerContext.SelfDefenseState, Is.Empty,
             "No self-defense should be initiated between rival guild members.");
@@ -688,7 +688,7 @@ public class RivalGuildCombatTest
     {
         // guilds are NOT rivals
         var plugIn = new SelfDefensePlugIn();
-        plugIn.AttackableGotHit(this._victim, this._killer, new HitInfo(100, 0, DamageAttributes.Undefined));
+        plugIn.AttackableGotHit(this._victim, this._killer, new HitInfo(100, 0, DamageAttributes.Undefined), null);
 
         Assert.That(this._gameServerContext.SelfDefenseState, Is.Not.Empty,
             "Self-defense should be initiated when hit by a non-rival player.");

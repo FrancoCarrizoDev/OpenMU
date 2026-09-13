@@ -10183,6 +10183,130 @@ public readonly ref struct EffectItemConsumptionRef
 
 
 /// <summary>
+/// Is sent by the server when: A magic effect was added, removed or refreshed for the player himself. It carries the duration and magnitude of the effect so the client can render a tooltip with the remaining and total duration.
+/// Causes reaction on client side: The client may update an extended buff tooltip with the precise remaining/total duration and the magnitude of the effect. Clients which do not understand this opcode ignore it, preserving full backward compatibility.
+/// </summary>
+public readonly ref struct MagicEffectDetailRef
+{
+    private readonly Span<byte> _data;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MagicEffectDetailRef"/> struct.
+    /// </summary>
+    /// <param name="data">The underlying data.</param>
+    public MagicEffectDetailRef(Span<byte> data)
+        : this(data, true)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MagicEffectDetailRef"/> struct.
+    /// </summary>
+    /// <param name="data">The underlying data.</param>
+    /// <param name="initialize">If set to <c>true</c>, the header data is automatically initialized and written to the underlying span.</param>
+    private MagicEffectDetailRef(Span<byte> data, bool initialize)
+    {
+        this._data = data;
+        if (initialize)
+        {
+            var header = this.Header;
+            header.Type = HeaderType;
+            header.Code = Code;
+            header.Length = (byte)Math.Min(data.Length, Length);
+        }
+    }
+
+    /// <summary>
+    /// Gets the header type of this data packet.
+    /// </summary>
+    public static byte HeaderType => 0xC1;
+
+    /// <summary>
+    /// Gets the operation code of this data packet.
+    /// </summary>
+    public static byte Code => 0x4E;
+
+    /// <summary>
+    /// Gets the initial length of this data packet. When the size is dynamic, this value may be bigger than actually needed.
+    /// </summary>
+    public static int Length => 17;
+
+    /// <summary>
+    /// Gets the header of this packet.
+    /// </summary>
+    public C1HeaderRef Header => new (this._data);
+
+    /// <summary>
+    /// Gets or sets the magic effect definition number (matches MagicEffectStatus.EffectId and EffectItemConsumption.MagicEffectNumber).
+    /// </summary>
+    public byte EffectNumber
+    {
+        get => this._data[3];
+        set => this._data[3] = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the id of the player whose effect changed.
+    /// </summary>
+    public ushort PlayerId
+    {
+        get => ReadUInt16BigEndian(this._data[4..]);
+        set => WriteUInt16BigEndian(this._data[4..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets bit 0 (0x01): IsActive (1 = added/refreshed, 0 = removed). Bit 1 (0x02): HasMagnitude. Bit 2 (0x04): HasRemainingSeconds. Bit 3 (0x08): HasTotalSeconds.
+    /// </summary>
+    public byte Flags
+    {
+        get => this._data[6];
+        set => this._data[6] = value;
+    }
+
+    /// <summary>
+    /// Gets or sets unsigned 16-bit magnitude of the first power-up of the effect, in effect-specific units (raw server value, saturated to [0, 65535]). For damage-over-time effects such as poison the magnitude is the value of the configured power-up, NOT the per-tick damage (which is computed from the target's current health and the attacker's poison multiplier at tick time). 0 when the effect has no associated power-up boost.
+    /// </summary>
+    public ushort Magnitude
+    {
+        get => ReadUInt16LittleEndian(this._data[7..]);
+        set => WriteUInt16LittleEndian(this._data[7..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets seconds remaining until the effect expires. 0 when the effect has just been removed or has just expired. On activation or refresh, this equals TotalSeconds.
+    /// </summary>
+    public uint RemainingSeconds
+    {
+        get => ReadUInt32LittleEndian(this._data[9..]);
+        set => WriteUInt32LittleEndian(this._data[9..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets total duration in seconds the effect will be active for, taken from the live MagicEffect.Duration. 0 for effect types which have no meaningful duration (e.g. passive flags).
+    /// </summary>
+    public uint TotalSeconds
+    {
+        get => ReadUInt32LittleEndian(this._data[13..]);
+        set => WriteUInt32LittleEndian(this._data[13..], value);
+    }
+
+    /// <summary>
+    /// Performs an implicit conversion from a Span of bytes to a <see cref="MagicEffectDetail"/>.
+    /// </summary>
+    /// <param name="packet">The packet as span.</param>
+    /// <returns>The packet as struct.</returns>
+    public static implicit operator MagicEffectDetailRef(Span<byte> packet) => new (packet, false);
+
+    /// <summary>
+    /// Performs an implicit conversion from <see cref="MagicEffectDetail"/> to a Span of bytes.
+    /// </summary>
+    /// <param name="packet">The packet as struct.</param>
+    /// <returns>The packet as byte span.</returns>
+    public static implicit operator Span<byte>(MagicEffectDetailRef packet) => packet._data;
+}
+
+
+/// <summary>
 /// Is sent by the server when: After the client talked to an NPC which should cause a dialog to open on the client side.
 /// Causes reaction on client side: The client opens the specified dialog.
 /// </summary>

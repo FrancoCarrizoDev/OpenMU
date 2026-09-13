@@ -1471,7 +1471,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
             await observer.InvokeViewPlugInAsync<IShowHitPlugIn>(p => p.ShowHitAsync(this, hitInfo)).ConfigureAwait(false);
         }
 
-        this.GameContext.PlugInManager.GetPlugInPoint<IAttackableGotHitPlugIn>()?.AttackableGotHit(this, attacker, hitInfo);
+        this.GameContext.PlugInManager.GetPlugInPoint<IAttackableGotHitPlugIn>()?.AttackableGotHit(this, attacker, hitInfo, skill);
 
         if (this.Attributes[Stats.CurrentHealth] < 1)
         {

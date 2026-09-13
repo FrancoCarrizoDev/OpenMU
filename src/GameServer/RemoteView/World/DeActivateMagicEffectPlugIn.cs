@@ -85,5 +85,85 @@ public class DeActivateMagicEffectPlugIn : IActivateMagicEffectPlugIn, IDeactiva
         {
             await this._player.Connection.SendMagicEffectStatusAsync(isActive, objectId, (byte)effect.Id).ConfigureAwait(false);
         }
+
+        if (affectedObject == this._player)
+        {
+            await this.SendMagicEffectDetailAsync(effect, isActive, (ushort)objectId).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Sends the <see cref="MagicEffectDetail"/> packet to the owning player.
+    /// The packet carries the precise remaining and total duration and the magnitude of the effect,
+    /// so the client can render an extended buff tooltip. Clients that do not understand the opcode ignore it.
+    /// </summary>
+    /// <param name="effect">The effect whose detail should be reported.</param>
+    /// <param name="isActive">Whether the effect was added/refreshed or removed.</param>
+    /// <param name="playerId">The id of the affected (owning) player.</param>
+    private async ValueTask SendMagicEffectDetailAsync(MagicEffect effect, bool isActive, ushort playerId)
+    {
+        if (this._player.Connection is null)
+        {
+            return;
+        }
+
+        const byte flagIsActive = 0x01;
+        const byte flagHasMagnitude = 0x02;
+        const byte flagHasRemaining = 0x04;
+        const byte flagHasTotal = 0x08;
+
+        byte flags = isActive ? flagIsActive : (byte)0;
+
+        // On removal we don't include magnitude/duration: the client already received them
+        // on activation. Keeping the packet compact and unambiguous about the removal event
+        // also avoids leaking stale values when the player gets the effect cancelled before
+        // it would have naturally timed out.
+        if (!isActive)
+        {
+            await this._player.Connection.SendMagicEffectDetailAsync(
+                (byte)effect.Definition.Number,
+                playerId,
+                flags,
+                0,
+                0u,
+                0u).ConfigureAwait(false);
+            return;
+        }
+
+        var magnitude = Math.Max(0f, effect.Value);
+        if (magnitude > ushort.MaxValue)
+        {
+            magnitude = ushort.MaxValue;
+        }
+
+        if (magnitude > 0)
+        {
+            flags |= flagHasMagnitude;
+        }
+
+        flags |= flagHasRemaining | flagHasTotal;
+
+        await this._player.Connection.SendMagicEffectDetailAsync(
+            (byte)effect.Definition.Number,
+            playerId,
+            flags,
+            (ushort)magnitude,
+            ToUInt32Seconds(effect.RemainingDuration),
+            ToUInt32Seconds(effect.Duration)).ConfigureAwait(false);
+    }
+
+    private static uint ToUInt32Seconds(TimeSpan value)
+    {
+        if (value <= TimeSpan.Zero)
+        {
+            return 0u;
+        }
+
+        if (value.TotalSeconds >= uint.MaxValue)
+        {
+            return uint.MaxValue;
+        }
+
+        return (uint)value.TotalSeconds;
     }
 }

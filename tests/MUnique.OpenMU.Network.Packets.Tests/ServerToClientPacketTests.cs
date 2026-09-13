@@ -241,10 +241,9 @@ public class PacketStructureTests
         // Fixed-length packet validation
         const int expectedLength = 12;
         var actualLength = GameServerEnteredRef.Length;
-        
-        Assert.That(actualLength, Is.EqualTo(expectedLength), 
+        Assert.That(actualLength, Is.EqualTo(expectedLength),
             "Packet length mismatch: declared length does not match calculated size");
-        
+
         // Validate field 'Success' boundary
         Assert.That(4 + 1, Is.LessThanOrEqualTo(expectedLength), 
             "Field 'Success' exceeds packet boundary");
@@ -2136,6 +2135,44 @@ public class PacketStructureTests
         // Validate field 'MagicEffectNumber' boundary
         Assert.That(16 + 1, Is.LessThanOrEqualTo(expectedLength), 
             "Field 'MagicEffectNumber' exceeds packet boundary");
+    }
+
+    /// <summary>
+    /// Tests the packet size calculation for MagicEffectDetail.
+    /// </summary>
+    [Test]
+    public void MagicEffectDetail_PacketSizeValidation()
+    {
+        // Fixed-length packet validation
+        const int expectedLength = 17;
+        var actualLength = MagicEffectDetailRef.Length;
+
+        Assert.That(actualLength, Is.EqualTo(expectedLength),
+            "Packet length mismatch: declared length does not match calculated size");
+
+        // Validate field 'EffectNumber' boundary
+        Assert.That(3 + 1, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'EffectNumber' exceeds packet boundary");
+
+        // Validate field 'PlayerId' boundary
+        Assert.That(4 + 2, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'PlayerId' exceeds packet boundary");
+
+        // Validate field 'Flags' boundary
+        Assert.That(6 + 1, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'Flags' exceeds packet boundary");
+
+        // Validate field 'Magnitude' boundary
+        Assert.That(7 + 2, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'Magnitude' exceeds packet boundary");
+
+        // Validate field 'RemainingSeconds' boundary
+        Assert.That(9 + 4, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'RemainingSeconds' exceeds packet boundary");
+
+        // Validate field 'TotalSeconds' boundary
+        Assert.That(13 + 4, Is.LessThanOrEqualTo(expectedLength),
+            "Field 'TotalSeconds' exceeds packet boundary");
     }
 
     /// <summary>
