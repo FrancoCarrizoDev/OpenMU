@@ -35,6 +35,18 @@ public class SpeedHackAntiCheatTests
     private static readonly Point StartPoint = new(100, 100);
 
     /// <summary>
+    /// Tests that item-consumption rate signals are warning-only by default until production telemetry is tuned.
+    /// </summary>
+    [Test]
+    public void TestItemConsumptionCooldownDefaultsToWarningOnly()
+    {
+        var configuration = new ActionRateDetectConfiguration();
+
+        Assert.That(configuration.CooldownAutoBan, Is.False);
+        Assert.That(configuration.CooldownDisconnectOnViolation, Is.False);
+    }
+
+    /// <summary>
     /// Tests that the speed check detects speed hacks on walk and bans the account after exceeding limits.
     /// </summary>
     [Test]

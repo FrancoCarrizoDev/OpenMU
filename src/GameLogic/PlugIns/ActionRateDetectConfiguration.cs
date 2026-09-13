@@ -28,14 +28,14 @@ public class ActionRateDetectConfiguration
     /// <summary>
     /// Gets or sets a value indicating whether repeated item-cooldown violations automatically ban an account.
     /// </summary>
-    [DefaultValue(true)]
-    public bool CooldownAutoBan { get; set; } = true;
+    [DefaultValue(false)]
+    public bool CooldownAutoBan { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether repeated item-cooldown violations disconnect the player.
     /// </summary>
-    [DefaultValue(true)]
-    public bool CooldownDisconnectOnViolation { get; set; } = true;
+    [DefaultValue(false)]
+    public bool CooldownDisconnectOnViolation { get; set; }
 
     /// <summary>
     /// Gets or sets the number of warnings allowed before an enabled automatic response is applied.

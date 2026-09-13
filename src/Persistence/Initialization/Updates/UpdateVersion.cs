@@ -544,4 +544,9 @@ public enum UpdateVersion
     /// The version of the <see cref="TuneSeasonOneResetPointsPlugIn"/>.
     /// </summary>
     TuneSeasonOneResetPoints = 107,
+
+    /// <summary>
+    /// The version of the <see cref="ResetSeasonOneTestAccountsPlugIn"/>.
+    /// </summary>
+    ResetSeasonOneTestAccounts = 108,
 }
