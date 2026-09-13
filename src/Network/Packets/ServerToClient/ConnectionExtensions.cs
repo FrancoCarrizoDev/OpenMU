@@ -1,4 +1,4 @@
-// <copyright file="ConnectionExtensions.cs" company="MUnique">
+﻿// <copyright file="ConnectionExtensions.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -2188,6 +2188,44 @@ public static class ConnectionExtensions
             packet.Action = @action;
             packet.RemainingSeconds = @remainingSeconds;
             packet.MagicEffectNumber = @magicEffectNumber;
+
+            return packet.Header.Length;
+        }
+
+        await connection.SendAsync(WritePacket).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends a <see cref="MagicEffectDetail" /> to this connection.
+    /// </summary>
+    /// <param name="connection">The connection.</param>
+    /// <param name="effectNumber">The magic effect definition number (matches MagicEffectStatus.EffectId and EffectItemConsumption.MagicEffectNumber).</param>
+    /// <param name="playerId">The id of the player whose effect changed.</param>
+    /// <param name="flags">Bit 0 (0x01): IsActive (1 = added/refreshed, 0 = removed). Bit 1 (0x02): HasMagnitude. Bit 2 (0x04): HasRemainingSeconds. Bit 3 (0x08): HasTotalSeconds.</param>
+    /// <param name="magnitude">Unsigned 16-bit magnitude of the first power-up of the effect, in effect-specific units (raw server value, saturated to [0, 65535]). For damage-over-time effects such as poison the magnitude is the value of the configured power-up, NOT the per-tick damage (which is computed from the target's current health and the attacker's poison multiplier at tick time). 0 when the effect has no associated power-up boost.</param>
+    /// <param name="remainingSeconds">Seconds remaining until the effect expires. 0 when the effect has just been removed or has just expired. On activation or refresh, this equals TotalSeconds.</param>
+    /// <param name="totalSeconds">Total duration in seconds the effect will be active for, taken from the live MagicEffect.Duration. 0 for effect types which have no meaningful duration (e.g. passive flags).</param>
+    /// <remarks>
+    /// Is sent by the server when: A magic effect was added, removed or refreshed for the player himself. It carries the duration and magnitude of the effect so the client can render a tooltip with the remaining and total duration.
+    /// Causes reaction on client side: The client may update an extended buff tooltip with the precise remaining/total duration and the magnitude of the effect. Clients which do not understand this opcode ignore it, preserving full backward compatibility.
+    /// </remarks>
+    public static async ValueTask SendMagicEffectDetailAsync(this IConnection? connection, byte @effectNumber, ushort @playerId, byte @flags, ushort @magnitude, uint @remainingSeconds, uint @totalSeconds)
+    {
+        if (connection is null)
+        {
+            return;
+        }
+
+        int WritePacket()
+        {
+            var length = MagicEffectDetailRef.Length;
+            var packet = new MagicEffectDetailRef(connection.Output.GetSpan(length)[..length]);
+            packet.EffectNumber = @effectNumber;
+            packet.PlayerId = @playerId;
+            packet.Flags = @flags;
+            packet.Magnitude = @magnitude;
+            packet.RemainingSeconds = @remainingSeconds;
+            packet.TotalSeconds = @totalSeconds;
 
             return packet.Header.Length;
         }

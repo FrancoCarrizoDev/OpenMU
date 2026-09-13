@@ -1,4 +1,4 @@
-// <copyright file="ServerToClientPacketsRef.cs" company="MUnique">
+﻿// <copyright file="ServerToClientPacketsRef.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -10179,6 +10179,130 @@ public readonly ref struct EffectItemConsumptionRef
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
     public static implicit operator Span<byte>(EffectItemConsumptionRef packet) => packet._data; 
+}
+
+
+/// <summary>
+/// Is sent by the server when: A magic effect was added, removed or refreshed for the player himself. It carries the duration and magnitude of the effect so the client can render a tooltip with the remaining and total duration.
+/// Causes reaction on client side: The client may update an extended buff tooltip with the precise remaining/total duration and the magnitude of the effect. Clients which do not understand this opcode ignore it, preserving full backward compatibility.
+/// </summary>
+public readonly ref struct MagicEffectDetailRef
+{
+    private readonly Span<byte> _data;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MagicEffectDetailRef"/> struct.
+    /// </summary>
+    /// <param name="data">The underlying data.</param>
+    public MagicEffectDetailRef(Span<byte> data)
+        : this(data, true)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MagicEffectDetailRef"/> struct.
+    /// </summary>
+    /// <param name="data">The underlying data.</param>
+    /// <param name="initialize">If set to <c>true</c>, the header data is automatically initialized and written to the underlying span.</param>
+    private MagicEffectDetailRef(Span<byte> data, bool initialize)
+    {
+        this._data = data;
+        if (initialize)
+        {
+            var header = this.Header;
+            header.Type = HeaderType;
+            header.Code = Code;
+            header.Length = (byte)Math.Min(data.Length, Length);
+        }
+    }
+
+    /// <summary>
+    /// Gets the header type of this data packet.
+    /// </summary>
+    public static byte HeaderType => 0xC1;
+
+    /// <summary>
+    /// Gets the operation code of this data packet.
+    /// </summary>
+    public static byte Code => 0x4E;
+
+    /// <summary>
+    /// Gets the initial length of this data packet. When the size is dynamic, this value may be bigger than actually needed.
+    /// </summary>
+    public static int Length => 17;
+
+    /// <summary>
+    /// Gets the header of this packet.
+    /// </summary>
+    public C1HeaderRef Header => new (this._data);
+
+    /// <summary>
+    /// Gets or sets the magic effect definition number (matches MagicEffectStatus.EffectId and EffectItemConsumption.MagicEffectNumber).
+    /// </summary>
+    public byte EffectNumber
+    {
+        get => this._data[3];
+        set => this._data[3] = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the id of the player whose effect changed.
+    /// </summary>
+    public ushort PlayerId
+    {
+        get => ReadUInt16BigEndian(this._data[4..]);
+        set => WriteUInt16BigEndian(this._data[4..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets bit 0 (0x01): IsActive (1 = added/refreshed, 0 = removed). Bit 1 (0x02): HasMagnitude. Bit 2 (0x04): HasRemainingSeconds. Bit 3 (0x08): HasTotalSeconds.
+    /// </summary>
+    public byte Flags
+    {
+        get => this._data[6];
+        set => this._data[6] = value;
+    }
+
+    /// <summary>
+    /// Gets or sets unsigned 16-bit magnitude of the first power-up of the effect, in effect-specific units (raw server value, saturated to [0, 65535]). For damage-over-time effects such as poison the magnitude is the value of the configured power-up, NOT the per-tick damage (which is computed from the target's current health and the attacker's poison multiplier at tick time). 0 when the effect has no associated power-up boost.
+    /// </summary>
+    public ushort Magnitude
+    {
+        get => ReadUInt16LittleEndian(this._data[7..]);
+        set => WriteUInt16LittleEndian(this._data[7..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets seconds remaining until the effect expires. 0 when the effect has just been removed or has just expired. On activation or refresh, this equals TotalSeconds.
+    /// </summary>
+    public uint RemainingSeconds
+    {
+        get => ReadUInt32LittleEndian(this._data[9..]);
+        set => WriteUInt32LittleEndian(this._data[9..], value);
+    }
+
+    /// <summary>
+    /// Gets or sets total duration in seconds the effect will be active for, taken from the live MagicEffect.Duration. 0 for effect types which have no meaningful duration (e.g. passive flags).
+    /// </summary>
+    public uint TotalSeconds
+    {
+        get => ReadUInt32LittleEndian(this._data[13..]);
+        set => WriteUInt32LittleEndian(this._data[13..], value);
+    }
+
+    /// <summary>
+    /// Performs an implicit conversion from a Span of bytes to a <see cref="MagicEffectDetail"/>.
+    /// </summary>
+    /// <param name="packet">The packet as span.</param>
+    /// <returns>The packet as struct.</returns>
+    public static implicit operator MagicEffectDetailRef(Span<byte> packet) => new (packet, false);
+
+    /// <summary>
+    /// Performs an implicit conversion from <see cref="MagicEffectDetail"/> to a Span of bytes.
+    /// </summary>
+    /// <param name="packet">The packet as struct.</param>
+    /// <returns>The packet as byte span.</returns>
+    public static implicit operator Span<byte>(MagicEffectDetailRef packet) => packet._data;
 }
 
 
@@ -29601,7 +29725,7 @@ public readonly ref struct CastleSiegeStatusResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeStatusResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeStatusResponseRef packet) => packet._data; 
 }
 
 
@@ -29696,7 +29820,7 @@ public readonly ref struct CastleSiegeRegistrationResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeRegistrationResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeRegistrationResponseRef packet) => packet._data; 
 }
 
 
@@ -29800,7 +29924,7 @@ public readonly ref struct CastleSiegeUnregisterResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeUnregisterResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeUnregisterResponseRef packet) => packet._data; 
 }
 
 
@@ -29922,7 +30046,7 @@ public readonly ref struct CastleSiegeRegistrationStateResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeRegistrationStateResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeRegistrationStateResponseRef packet) => packet._data; 
 }
 
 
@@ -30026,7 +30150,7 @@ public readonly ref struct CastleSiegeMarkRegistrationResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMarkRegistrationResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMarkRegistrationResponseRef packet) => packet._data; 
 }
 
 
@@ -30130,7 +30254,7 @@ public readonly ref struct CastleSiegeDefenseBuyResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeDefenseBuyResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeDefenseBuyResponseRef packet) => packet._data; 
 }
 
 
@@ -30252,7 +30376,7 @@ public readonly ref struct CastleSiegeDefenseRepairResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeDefenseRepairResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeDefenseRepairResponseRef packet) => packet._data; 
 }
 
 
@@ -30374,7 +30498,7 @@ public readonly ref struct CastleSiegeDefenseUpgradeResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeDefenseUpgradeResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeDefenseUpgradeResponseRef packet) => packet._data; 
 }
 
 
@@ -30487,7 +30611,7 @@ public readonly ref struct CastleSiegeTaxInfoResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeTaxInfoResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeTaxInfoResponseRef packet) => packet._data; 
 }
 
 
@@ -30591,7 +30715,7 @@ public readonly ref struct CastleSiegeTaxChangeResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeTaxChangeResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeTaxChangeResponseRef packet) => packet._data; 
 }
 
 
@@ -30686,7 +30810,7 @@ public readonly ref struct CastleSiegeTributeWithdrawResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeTributeWithdrawResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeTributeWithdrawResponseRef packet) => packet._data; 
 }
 
 
@@ -30781,7 +30905,7 @@ public readonly ref struct CastleSiegeGateInterfaceResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeGateInterfaceResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeGateInterfaceResponseRef packet) => packet._data; 
 }
 
 
@@ -30885,7 +31009,7 @@ public readonly ref struct CastleSiegeGateOperateResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeGateOperateResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeGateOperateResponseRef packet) => packet._data; 
 }
 
 
@@ -30980,7 +31104,7 @@ public readonly ref struct CastleSiegeGateStateNotificationRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeGateStateNotificationRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeGateStateNotificationRef packet) => packet._data; 
 }
 
 
@@ -31084,7 +31208,7 @@ public readonly ref struct CastleSiegeCrownSwitchStateRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeCrownSwitchStateRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeCrownSwitchStateRef packet) => packet._data; 
 }
 
 
@@ -31179,7 +31303,7 @@ public readonly ref struct CastleSiegeCrownAccessStateRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeCrownAccessStateRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeCrownAccessStateRef packet) => packet._data; 
 }
 
 
@@ -31265,7 +31389,7 @@ public readonly ref struct CastleSiegeCrownStateUpdateRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeCrownStateUpdateRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeCrownStateUpdateRef packet) => packet._data; 
 }
 
 
@@ -31351,7 +31475,7 @@ public readonly ref struct CastleSiegeBattleStartEndRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeBattleStartEndRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeBattleStartEndRef packet) => packet._data; 
 }
 
 
@@ -31446,7 +31570,7 @@ public readonly ref struct CastleSiegeBattleProcessRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeBattleProcessRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeBattleProcessRef packet) => packet._data; 
 }
 
 
@@ -31532,7 +31656,7 @@ public readonly ref struct CastleSiegeJoinSideNotificationRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeJoinSideNotificationRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeJoinSideNotificationRef packet) => packet._data; 
 }
 
 
@@ -31627,7 +31751,7 @@ public readonly ref struct CastleSiegeTaxRateNotificationRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeTaxRateNotificationRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeTaxRateNotificationRef packet) => packet._data; 
 }
 
 
@@ -31713,7 +31837,7 @@ public readonly ref struct CastleSiegeMiniMapResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMiniMapResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMiniMapResponseRef packet) => packet._data; 
 }
 
 
@@ -31826,7 +31950,7 @@ public readonly ref struct CastleSiegeGuildCommandRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeGuildCommandRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeGuildCommandRef packet) => packet._data; 
 }
 
 
@@ -31921,7 +32045,7 @@ public readonly ref struct CastleSiegeRemainingTimeRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeRemainingTimeRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeRemainingTimeRef packet) => packet._data; 
 }
 
 
@@ -32016,7 +32140,7 @@ public readonly ref struct CastleSiegeHuntingZoneEntranceSettingResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeHuntingZoneEntranceSettingResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeHuntingZoneEntranceSettingResponseRef packet) => packet._data; 
 }
 
 
@@ -32138,7 +32262,7 @@ public readonly ref struct CastleSiegeSwitchInfoRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeSwitchInfoRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeSwitchInfoRef packet) => packet._data; 
 }
 
 
@@ -32226,13 +32350,13 @@ public readonly ref struct CastleSiegeNpcListRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeNpcListRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeNpcListRef packet) => packet._data; 
 
     /// <summary>
     /// Calculates the size of the packet for the specified count of <see cref="CastleSiegeNpcInfoRef"/>.
     /// </summary>
     /// <param name="npcListCount">The count of <see cref="CastleSiegeNpcInfoRef"/> from which the size will be calculated.</param>
-
+        
     public static int GetRequiredSize(int npcListCount) => npcListCount * CastleSiegeNpcInfoRef.Length + 9;
 
 
@@ -32425,13 +32549,13 @@ public readonly ref struct CastleSiegeRegisteredGuildListRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeRegisteredGuildListRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeRegisteredGuildListRef packet) => packet._data; 
 
     /// <summary>
     /// Calculates the size of the packet for the specified count of <see cref="RegisteredGuildEntryRef"/>.
     /// </summary>
     /// <param name="guildsCount">The count of <see cref="RegisteredGuildEntryRef"/> from which the size will be calculated.</param>
-
+        
     public static int GetRequiredSize(int guildsCount) => guildsCount * RegisteredGuildEntryRef.Length + 9;
 
 
@@ -32579,13 +32703,13 @@ public readonly ref struct CastleSiegeGuildListRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeGuildListRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeGuildListRef packet) => packet._data; 
 
     /// <summary>
     /// Calculates the size of the packet for the specified count of <see cref="CastleSiegeGuildEntryRef"/>.
     /// </summary>
     /// <param name="guildsCount">The count of <see cref="CastleSiegeGuildEntryRef"/> from which the size will be calculated.</param>
-
+        
     public static int GetRequiredSize(int guildsCount) => guildsCount * CastleSiegeGuildEntryRef.Length + 9;
 
 
@@ -32724,13 +32848,13 @@ public readonly ref struct CastleSiegeMiniMapPlayerPositionsRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMiniMapPlayerPositionsRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMiniMapPlayerPositionsRef packet) => packet._data; 
 
     /// <summary>
     /// Calculates the size of the packet for the specified count of <see cref="MiniMapPlayerPositionRef"/>.
     /// </summary>
     /// <param name="playersCount">The count of <see cref="MiniMapPlayerPositionRef"/> from which the size will be calculated.</param>
-
+        
     public static int GetRequiredSize(int playersCount) => playersCount * MiniMapPlayerPositionRef.Length + 8;
 
 
@@ -32876,7 +33000,7 @@ public readonly ref struct CastleSiegeMachineInterfaceRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMachineInterfaceRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMachineInterfaceRef packet) => packet._data; 
 }
 
 
@@ -32998,7 +33122,7 @@ public readonly ref struct CastleSiegeMachineUseResultRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMachineUseResultRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMachineUseResultRef packet) => packet._data; 
 }
 
 
@@ -33102,7 +33226,7 @@ public readonly ref struct CastleSiegeMachineRegionNotifyRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMachineRegionNotifyRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMachineRegionNotifyRef packet) => packet._data; 
 }
 
 
@@ -33197,7 +33321,7 @@ public readonly ref struct CastleSiegeLifeStoneBuildTimeRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeLifeStoneBuildTimeRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeLifeStoneBuildTimeRef packet) => packet._data; 
 }
 
 
@@ -33282,7 +33406,7 @@ public readonly ref struct CastleSiegeOwnerLogoRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeOwnerLogoRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeOwnerLogoRef packet) => packet._data; 
 }
 
 
@@ -33404,7 +33528,7 @@ public readonly ref struct CastleSiegeHuntingZoneGuardInfoRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeHuntingZoneGuardInfoRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeHuntingZoneGuardInfoRef packet) => packet._data; 
 }
 
 
@@ -33490,7 +33614,7 @@ public readonly ref struct CastleSiegeHuntingZoneEnterResponseRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeHuntingZoneEnterResponseRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeHuntingZoneEnterResponseRef packet) => packet._data; 
 }
 
 
@@ -33569,13 +33693,13 @@ public readonly ref struct CastleSiegeMiniMapNpcPositionsRef
     /// </summary>
     /// <param name="packet">The packet as struct.</param>
     /// <returns>The packet as byte span.</returns>
-    public static implicit operator Span<byte>(CastleSiegeMiniMapNpcPositionsRef packet) => packet._data;
+    public static implicit operator Span<byte>(CastleSiegeMiniMapNpcPositionsRef packet) => packet._data; 
 
     /// <summary>
     /// Calculates the size of the packet for the specified count of <see cref="MiniMapNpcPositionRef"/>.
     /// </summary>
     /// <param name="npcsCount">The count of <see cref="MiniMapNpcPositionRef"/> from which the size will be calculated.</param>
-
+        
     public static int GetRequiredSize(int npcsCount) => npcsCount * MiniMapNpcPositionRef.Length + 5;
 
 

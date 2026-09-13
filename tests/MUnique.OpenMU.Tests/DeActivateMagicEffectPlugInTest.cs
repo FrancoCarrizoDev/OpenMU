@@ -18,7 +18,8 @@ using BasicModel = MUnique.OpenMU.Persistence.BasicModel;
 public class DeActivateMagicEffectPlugInTest
 {
     /// <summary>
-    /// Verifies that the duration packet is emitted only when requested by the magic effect definition.
+    /// Verifies that the duration packet is emitted only when requested by the magic effect definition,
+    /// and that the <see cref="MagicEffectDetail"/> extension packet is always appended to the owner's stream.
     /// </summary>
     [TestCase(true)]
     [TestCase(false)]
@@ -37,25 +38,35 @@ public class DeActivateMagicEffectPlugInTest
         await plugIn.ActivateMagicEffectAsync(effect, player);
 
         var packetData = output.ToArray();
+        EffectItemConsumption packet = packetData.AsMemory();
         if (sendDuration)
         {
-            EffectItemConsumption packet = packetData.AsMemory();
             Assert.Multiple(() =>
             {
-                Assert.That(packetData, Has.Length.EqualTo(EffectItemConsumption.Length));
                 Assert.That(packet.RemainingSeconds, Is.EqualTo(42));
                 Assert.That(packet.MagicEffectNumber, Is.EqualTo(1));
             });
         }
         else
         {
-            EffectItemConsumption packet = packetData.AsMemory();
             Assert.Multiple(() =>
             {
-                Assert.That(packetData, Has.Length.EqualTo(EffectItemConsumption.Length));
                 Assert.That(packet.RemainingSeconds, Is.Zero);
             });
         }
+
+        // The MagicEffectDetail extension packet is always appended right after the EffectItemConsumption.
+        Assert.That(packetData, Has.Length.GreaterThanOrEqualTo(EffectItemConsumption.Length + MagicEffectDetail.Length),
+            "Expected MagicEffectDetail to be appended after EffectItemConsumption.");
+        MagicEffectDetail detail = packetData.AsMemory(EffectItemConsumption.Length, MagicEffectDetail.Length);
+        Assert.Multiple(() =>
+        {
+            Assert.That(detail.EffectNumber, Is.EqualTo(1));
+            Assert.That(detail.Flags & 0x01, Is.EqualTo(0x01), "Effect should be marked active.");
+            Assert.That(detail.TotalSeconds, Is.LessThanOrEqualTo(42));
+            Assert.That(detail.TotalSeconds, Is.GreaterThanOrEqualTo(41));
+            Assert.That(detail.RemainingSeconds, Is.LessThanOrEqualTo(detail.TotalSeconds));
+        });
 
         await effect.DisposeAsync();
     }

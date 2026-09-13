@@ -16,6 +16,7 @@ using MUnique.OpenMU.PlugIns;
 public class MagicEffect : AsyncDisposable
 {
     private readonly Timer _finishTimer;
+    private bool _hasExpired;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MagicEffect"/> class.
@@ -44,6 +45,7 @@ public class MagicEffect : AsyncDisposable
         this.PowerUpElements = powerUps;
         this.Definition = definition;
         this.Duration = duration;
+        this.StartedAt = DateTime.UtcNow;
         this._finishTimer = new Timer(this.OnTimerTimeout, null, (int)this.Duration.TotalMilliseconds, Timeout.Infinite);
     }
 
@@ -61,6 +63,32 @@ public class MagicEffect : AsyncDisposable
     /// Gets or sets the duration of the effect.
     /// </summary>
     public TimeSpan Duration { get; set; }
+
+    /// <summary>
+    /// Gets the UTC timestamp at which the current <see cref="Duration"/> started ticking down.
+    /// Reset by <see cref="ResetTimer"/> whenever the effect is (re-)applied with a new duration.
+    /// </summary>
+    public DateTime StartedAt { get; private set; }
+
+    /// <summary>
+    /// Gets the time remaining until this effect expires, based on the current <see cref="Duration"/>
+    /// and <see cref="StartedAt"/>. Never negative and clamped to <see cref="TimeSpan.Zero"/> when
+    /// the timer has already fired. Returns <see cref="TimeSpan.Zero"/> once the effect is disposed.
+    /// </summary>
+    public TimeSpan RemainingDuration
+    {
+        get
+        {
+            if (this._hasExpired || this.IsDisposed || this.IsDisposing)
+            {
+                return TimeSpan.Zero;
+            }
+
+            var elapsed = DateTime.UtcNow - this.StartedAt;
+            var remaining = this.Duration - elapsed;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+        }
+    }
 
     /// <summary>
     /// Gets the value.
@@ -98,12 +126,14 @@ public class MagicEffect : AsyncDisposable
             throw new ObjectDisposedException(nameof(MagicEffect));
         }
 
+        this.StartedAt = DateTime.UtcNow;
         this._finishTimer.Change((int)this.Duration.TotalMilliseconds, Timeout.Infinite);
     }
 
     /// <inheritdoc/>
     protected override async ValueTask DisposeAsyncCore()
     {
+        this._hasExpired = true;
         await this._finishTimer.DisposeAsync().ConfigureAwait(false);
         await this.OnEffectTimeOutAsync().ConfigureAwait(false);
         this.EffectTimeOut = null;
@@ -152,7 +182,7 @@ public class MagicEffect : AsyncDisposable
         /// <summary>
         /// Initializes a new instance of the <see cref="ElementWithTarget"/> class.
         /// </summary>
-        /// <param name="element">The element.</param>
+        /// <param name="element">The element containing the boost value.</param>
         /// <param name="target">The target attribute.</param>
         public ElementWithTarget(IElement element, AttributeDefinition target)
         {
