@@ -30,7 +30,7 @@ public class SelfDefensePlugInTest
         summonable.Setup(s => s.Definition).Returns(new MonsterDefinition());
 
         var plugIn = new SelfDefensePlugIn();
-        plugIn.AttackableGotHit(summonMock.Object, player, new HitInfo(1, 0, DamageAttributes.Undefined));
+        plugIn.AttackableGotHit(summonMock.Object, player, new HitInfo(1, 0, DamageAttributes.Undefined), null);
 
         Assert.That(player.GameContext.SelfDefenseState, Is.Empty);
     }

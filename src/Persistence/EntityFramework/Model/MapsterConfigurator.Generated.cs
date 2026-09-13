@@ -35,6 +35,9 @@ public static class MapsterConfigurator
         Mapster.TypeAdapterConfig.GlobalSettings.Default.PreserveReference(true);
         Mapster.TypeAdapterConfig.GlobalSettings.Default.IgnoreMember((member, side) => member.Name.StartsWith("Raw"));
 
+        Mapster.TypeAdapterConfig.GlobalSettings.NewConfig<MUnique.OpenMU.DataModel.Statistics.CombatMetric, MUnique.OpenMU.DataModel.Statistics.CombatMetric>()
+            .Include<CombatMetric, BasicModel.CombatMetric>();
+
         Mapster.TypeAdapterConfig.GlobalSettings.NewConfig<MUnique.OpenMU.DataModel.Statistics.MiniGameRankingEntry, MUnique.OpenMU.DataModel.Statistics.MiniGameRankingEntry>()
             .Include<MiniGameRankingEntry, BasicModel.MiniGameRankingEntry>();
 

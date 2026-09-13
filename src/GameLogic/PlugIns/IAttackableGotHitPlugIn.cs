@@ -20,5 +20,6 @@ public interface IAttackableGotHitPlugIn
     /// <param name="attackable">The attackable.</param>
     /// <param name="attacker">The attacker.</param>
     /// <param name="hitInfo">The hit information.</param>
-    void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo);
+    /// <param name="skill">The skill which caused the hit, if any.</param>
+    void AttackableGotHit(IAttackable attackable, IAttacker attacker, HitInfo hitInfo, Skill? skill);
 }
